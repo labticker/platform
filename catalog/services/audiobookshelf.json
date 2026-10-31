@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "audiobookshelf",
+  "name": "Audiobookshelf",
+  "summary": "Host audiobooks and podcasts with listening progress support.",
+  "category": "media",
+  "website": "https://github.com/advplyr/audiobookshelf",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/advplyr/audiobookshelf"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "advplyr/audiobookshelf",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

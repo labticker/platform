@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "changedetection",
+  "name": "changedetection.io",
+  "summary": "Monitor selected web pages for content changes.",
+  "category": "monitoring",
+  "website": "https://github.com/dgtlmoon/changedetection.io",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/dgtlmoon/changedetection.io"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "dgtlmoon/changedetection.io",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

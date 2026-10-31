@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "syncthing",
+  "name": "Syncthing",
+  "summary": "Synchronize files directly between personally controlled devices.",
+  "category": "storage",
+  "website": "https://github.com/syncthing/syncthing",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/syncthing/syncthing"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "syncthing/syncthing",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

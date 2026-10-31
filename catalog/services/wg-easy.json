@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "wg-easy",
+  "name": "WG Easy",
+  "summary": "Manage a WireGuard VPN server through a web interface.",
+  "category": "networking",
+  "website": "https://github.com/wg-easy/wg-easy",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/wg-easy/wg-easy"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "wg-easy/wg-easy",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

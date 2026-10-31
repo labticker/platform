@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "vikunja",
+  "name": "Vikunja",
+  "summary": "Organize tasks and shared projects on a personal server.",
+  "category": "productivity",
+  "website": "https://github.com/go-vikunja/vikunja",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/go-vikunja/vikunja"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "go-vikunja/vikunja",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

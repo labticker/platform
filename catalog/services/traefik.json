@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "traefik",
+  "name": "Traefik",
+  "summary": "Route incoming requests to services through a reverse proxy.",
+  "category": "networking",
+  "website": "https://github.com/traefik/traefik",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/traefik/traefik"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "traefik/traefik",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

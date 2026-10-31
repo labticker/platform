@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "jellyfin",
+  "name": "Jellyfin",
+  "summary": "Serve a private media library to televisions and personal devices.",
+  "category": "media",
+  "website": "https://github.com/jellyfin/jellyfin",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/jellyfin/jellyfin"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "jellyfin/jellyfin",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

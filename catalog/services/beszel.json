@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "beszel",
+  "name": "Beszel",
+  "summary": "Track server resource usage through a compact monitoring interface.",
+  "category": "monitoring",
+  "website": "https://github.com/henrygd/beszel",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/henrygd/beszel"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "henrygd/beszel",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

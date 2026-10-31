@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "actual-budget",
+  "name": "Actual Budget",
+  "summary": "Manage household budgets using a privately hosted finance application.",
+  "category": "productivity",
+  "website": "https://github.com/actualbudget/actual",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/actualbudget/actual"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "actualbudget/actual",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

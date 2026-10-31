@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "mealie",
+  "name": "Mealie",
+  "summary": "Collect recipes and prepare meal plans for a household.",
+  "category": "productivity",
+  "website": "https://github.com/mealie-recipes/mealie",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/mealie-recipes/mealie"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "mealie-recipes/mealie",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

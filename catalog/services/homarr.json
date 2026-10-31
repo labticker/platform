@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "homarr",
+  "name": "Homarr",
+  "summary": "Create a dashboard linking household applications and services.",
+  "category": "productivity",
+  "website": "https://github.com/homarr-labs/homarr",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/homarr-labs/homarr"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "homarr-labs/homarr",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

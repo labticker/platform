@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "gatus",
+  "name": "Gatus",
+  "summary": "Check service endpoints and display availability results.",
+  "category": "monitoring",
+  "website": "https://github.com/TwiN/gatus",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/TwiN/gatus"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "TwiN/gatus",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

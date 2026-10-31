@@ -15,4 +15,3 @@ Rollback: pause sends on uncertainty; redeploy the last compatible image through
 On source failures retain history, show degradation and back off. On database outage halt new sends; resume durable leases after recovery. On quota exhaustion retain queue and alert. On bounce/complaint suppress immediately from verified webhooks. On duplicate delivery pause sends and reconcile digest keys/receipts. Keep logs free of addresses, secrets and raw webhook payloads.
 
 Live email is separately blocked on verified owner-controlled sender, sender/contact identity, consent/unsubscribe, signed webhooks, quota review and authorized-recipient tests. Authentication sender must have tracking disabled. Opens remain off by default and, if later authorized, are unreliable estimates due to Apple MPP.
-

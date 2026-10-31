@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "linkding",
+  "name": "Linkding",
+  "summary": "Save and organize bookmarks in a personally hosted library.",
+  "category": "productivity",
+  "website": "https://github.com/sissbruecker/linkding",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/sissbruecker/linkding"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "sissbruecker/linkding",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

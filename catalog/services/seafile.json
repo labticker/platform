@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "seafile",
+  "name": "Seafile",
+  "summary": "Synchronize and share files through a personally hosted server.",
+  "category": "storage",
+  "website": "https://github.com/haiwen/seafile",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/haiwen/seafile"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "haiwen/seafile",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

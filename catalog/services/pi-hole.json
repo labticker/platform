@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "pi-hole",
+  "name": "Pi-hole",
+  "summary": "Filter DNS requests for devices on a private network.",
+  "category": "networking",
+  "website": "https://github.com/pi-hole/pi-hole",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/pi-hole/pi-hole"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "pi-hole/pi-hole",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "home-assistant",
+  "name": "Home Assistant",
+  "summary": "Automate household devices and coordinate local smart-home workflows.",
+  "category": "automation",
+  "website": "https://github.com/home-assistant/core",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/home-assistant/core"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "home-assistant/core",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

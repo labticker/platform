@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "homepage",
+  "name": "Homepage",
+  "summary": "Display service links and status widgets on a personal dashboard.",
+  "category": "productivity",
+  "website": "https://github.com/gethomepage/homepage",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/gethomepage/homepage"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "gethomepage/homepage",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

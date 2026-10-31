@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "portainer",
+  "name": "Portainer",
+  "summary": "Manage container environments using a graphical web interface.",
+  "category": "development",
+  "website": "https://github.com/portainer/portainer",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/portainer/portainer"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "portainer/portainer",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

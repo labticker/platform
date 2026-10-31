@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "netdata",
+  "name": "Netdata",
+  "summary": "Inspect system and application performance through live charts.",
+  "category": "monitoring",
+  "website": "https://github.com/netdata/netdata",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/netdata/netdata"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "netdata/netdata",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "rclone",
+  "name": "Rclone",
+  "summary": "Copy and synchronize files across local and remote storage systems.",
+  "category": "storage",
+  "website": "https://github.com/rclone/rclone",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/rclone/rclone"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "rclone/rclone",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

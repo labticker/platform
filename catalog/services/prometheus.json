@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "prometheus",
+  "name": "Prometheus",
+  "summary": "Collect time-series metrics and evaluate monitoring rules.",
+  "category": "monitoring",
+  "website": "https://github.com/prometheus/prometheus",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/prometheus/prometheus"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "prometheus/prometheus",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

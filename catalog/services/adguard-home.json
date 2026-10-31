@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "adguard-home",
+  "name": "AdGuard Home",
+  "summary": "Operate a local DNS resolver with configurable filtering rules.",
+  "category": "networking",
+  "website": "https://github.com/AdguardTeam/AdGuardHome",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/AdguardTeam/AdGuardHome"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "AdguardTeam/AdGuardHome",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

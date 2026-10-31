@@ -11,4 +11,3 @@ Phases follow the owner's delivery numbering (which supersedes older numbering i
 - Phase 5: tested dormant web/email advertising interfaces only.
 
 Public live email is a separate verified-sender gate. Active advertising, CVE monitoring, paid tiers, customer AI and inventory agents are deferred.
-

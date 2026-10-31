@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "dockge",
+  "name": "Dockge",
+  "summary": "Manage Compose application stacks through a web dashboard.",
+  "category": "development",
+  "website": "https://github.com/louislam/dockge",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/louislam/dockge"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "louislam/dockge",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

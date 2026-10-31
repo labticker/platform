@@ -1,0 +1,1 @@
+{"name":"@labticker/web","private":true,"version":"0.0.1","scripts":{"dev":"next dev","build":"next build","start":"next start","typecheck":"tsc --noEmit"},"dependencies":{"next":"16.4.3","react":"19.3.1","react-dom":"19.3.1"},"devDependencies":{"@types/react":"19.2.14","@types/react-dom":"19.2.3"}}

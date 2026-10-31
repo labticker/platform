@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "paperless-ngx",
+  "name": "Paperless-ngx",
+  "summary": "Organize scanned documents in a searchable personal archive.",
+  "category": "productivity",
+  "website": "https://github.com/paperless-ngx/paperless-ngx",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/paperless-ngx/paperless-ngx"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "paperless-ngx/paperless-ngx",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "linkwarden",
+  "name": "Linkwarden",
+  "summary": "Collect shared bookmarks and preserve linked web pages.",
+  "category": "productivity",
+  "website": "https://github.com/linkwarden/linkwarden",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/linkwarden/linkwarden"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "linkwarden/linkwarden",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

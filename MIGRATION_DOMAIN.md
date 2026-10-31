@@ -12,4 +12,3 @@ After explicit owner authorization and domain ownership verification:
 6. Annotate analytics with migration date and verify historical continuity. Keep advertising disabled.
 
 Rollback: restore prior canonical origin/callbacks and deployment configuration, retaining valid unsubscribe paths. Do not revert database changes or remove sender records without a separately reviewed plan.
-

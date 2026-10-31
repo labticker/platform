@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "authentik",
+  "name": "authentik",
+  "summary": "Provide identity and sign-in services for hosted applications.",
+  "category": "security",
+  "website": "https://github.com/goauthentik/authentik",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/goauthentik/authentik"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "goauthentik/authentik",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "miniflux",
+  "name": "Miniflux",
+  "summary": "Read subscribed news feeds through a focused web application.",
+  "category": "productivity",
+  "website": "https://github.com/miniflux/v2",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/miniflux/v2"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "miniflux/v2",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

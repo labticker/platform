@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "freshrss",
+  "name": "FreshRSS",
+  "summary": "Read and organize subscribed RSS feeds on a personal server.",
+  "category": "productivity",
+  "website": "https://github.com/FreshRSS/FreshRSS",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/FreshRSS/FreshRSS"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "FreshRSS/FreshRSS",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

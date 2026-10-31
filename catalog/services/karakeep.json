@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "karakeep",
+  "name": "Karakeep",
+  "summary": "Store and organize personal bookmarks and saved reading material.",
+  "category": "productivity",
+  "website": "https://github.com/karakeep-app/karakeep",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/karakeep-app/karakeep"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "karakeep-app/karakeep",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

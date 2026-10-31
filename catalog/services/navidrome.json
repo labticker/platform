@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "navidrome",
+  "name": "Navidrome",
+  "summary": "Stream a personal music collection from a home server.",
+  "category": "media",
+  "website": "https://github.com/navidrome/navidrome",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/navidrome/navidrome"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "navidrome/navidrome",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

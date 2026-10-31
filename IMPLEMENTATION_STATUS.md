@@ -4,7 +4,7 @@ Updated 2026-10-30. All phases remain incomplete until their full acceptance sui
 
 | Phase | Status | Remaining acceptance evidence |
 |---|---|---|
-| 0 | In progress | 50 independently verified seeds, actual source tests, handle allocation checks, vendor test calls and governance activation |
+| 0 | In progress | Explicit not-on-selfh.st membership verification, 20-case ingestion spike, handle allocation checks, vendor test calls and governance activation |
 | 1 | Not accepted | Working auth, schema/migrations, monitor dashboard, import/provenance and subscription preservation |
 | 2 | Not accepted | Real source adapters, idempotent storage, classifier/source-health tests |
 | 3 | Not accepted | DST scheduling, durable claims/retries, consent/suppression/unsubscribe, signed webhook and mock delivery tests |
@@ -20,7 +20,10 @@ GitHub API `users/labticker` returned 404: no public account was observed, but a
 
 ## Executed checks
 
-The root agent reports dormant notifications tests passed (4/4) and that package's TypeScript check passed. This is partial Phase 5 evidence only; it does not establish browser network, production rendering, or full phase acceptance. Foundation/catalog verification is tracked separately as it runs.
+The catalog now contains 50 definitions whose official GitHub stable-release endpoints were verified, with evidence in `catalog/verification.json`. selfh.st reuse permission remains unresolved and its importer remains disabled. Independent confirmation of at least one project's absence from selfh.st and the representative 20-case ingestion spike remain outstanding.
+
+Foundation tests passed (9 tests), including catalog and dormant notifications checks; strict TypeScript checks passed. This is partial foundation/Phase 5 evidence only; it does not establish browser network, production rendering, or full phase acceptance. The Next.js preview and worker scaffold are being built; final build evidence is pending.
 
 Owner setup required: confirm license/legal terms and private security contact; authorize organization and vendor accounts; approve any billable Fly resource after quota/budget review; supply a verified existing sender domain when ready; configure protected production environment/reviewer and scoped secrets. No domain purchase is needed for web readiness.
 
+Final local increment verification: pnpm test passed 9 tests; pnpm catalog:validate passed 50 definitions; foundation agent executed pnpm build successfully and strict typechecks across all four packages. Next catalog preview and disabled worker scaffold exist. No browser E2E, live database, scheduler, auth, PostHog, Resend or deployment acceptance is claimed.

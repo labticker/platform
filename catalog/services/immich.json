@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "immich",
+  "name": "Immich",
+  "summary": "Host a personal photo library with backup and browsing tools.",
+  "category": "media",
+  "website": "https://github.com/immich-app/immich",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/immich-app/immich"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "immich-app/immich",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

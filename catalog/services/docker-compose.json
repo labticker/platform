@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "docker-compose",
+  "name": "Docker Compose",
+  "summary": "Define and run multi-container applications using declarative configuration.",
+  "category": "development",
+  "website": "https://github.com/docker/compose",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/docker/compose"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "docker/compose",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

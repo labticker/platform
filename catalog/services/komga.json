@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "komga",
+  "name": "Komga",
+  "summary": "Organize and read comics and other illustrated digital books.",
+  "category": "media",
+  "website": "https://github.com/gotson/komga",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/gotson/komga"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "gotson/komga",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

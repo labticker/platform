@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "vaultwarden",
+  "name": "Vaultwarden",
+  "summary": "Run a community password-vault server compatible with Bitwarden clients.",
+  "category": "security",
+  "website": "https://github.com/dani-garcia/vaultwarden",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/dani-garcia/vaultwarden"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "dani-garcia/vaultwarden",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

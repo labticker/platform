@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "grafana",
+  "name": "Grafana",
+  "summary": "Explore operational metrics and create monitoring dashboards.",
+  "category": "monitoring",
+  "website": "https://github.com/grafana/grafana",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/grafana/grafana"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "grafana/grafana",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

@@ -1,0 +1,10 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { parseService,validatePublicUrl } from '../src/index.js';
+const fixture=JSON.parse(await readFile(new URL('../../../catalog/examples/example-service.json',import.meta.url),'utf8'));
+test('versioned fixture passes JSON Schema and runtime contract',()=>assert.equal(parseService(fixture).slug,'example-monitor'));
+test('unsafe destinations and credentialed URLs rejected',()=>{for(const url of ['http://github.com/a','https://localhost/a','https://127.1/a','https://[::1]/','https://169.254.169.254/','https://user:pass@github.com/a','https://github.com/#secret'])assert.throws(()=>validatePublicUrl(url),url);});
+test('unknown executable fields rejected',()=>assert.throws(()=>parseService({...fixture,command:'curl secrets'})));
+test('empty sources explicitly supported',()=>assert.equal(parseService({...fixture,releaseSources:[]}).releaseSources.length,0));
+test('normalized duplicate aliases and markup rejected',()=>{assert.throws(()=>parseService({...fixture,aliases:['Test',' test']}));assert.throws(()=>parseService({...fixture,name:'<script>injected</script>'}));});

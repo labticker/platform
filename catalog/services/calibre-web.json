@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "calibre-web",
+  "name": "Calibre-Web",
+  "summary": "Browse and access an ebook library through a web application.",
+  "category": "media",
+  "website": "https://github.com/janeczku/calibre-web",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/janeczku/calibre-web"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "janeczku/calibre-web",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

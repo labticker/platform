@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "restic",
+  "name": "Restic",
+  "summary": "Create encrypted backups of files to local or remote storage.",
+  "category": "storage",
+  "website": "https://github.com/restic/restic",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/restic/restic"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "restic/restic",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

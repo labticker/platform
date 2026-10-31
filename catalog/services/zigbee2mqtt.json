@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "zigbee2mqtt",
+  "name": "Zigbee2MQTT",
+  "summary": "Bridge Zigbee devices to an MQTT broker for local automation.",
+  "category": "automation",
+  "website": "https://github.com/Koenkk/zigbee2mqtt",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/Koenkk/zigbee2mqtt"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "Koenkk/zigbee2mqtt",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

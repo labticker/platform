@@ -1,0 +1,1 @@
+{"name":"@labticker/worker","private":true,"version":"0.0.1","type":"module","scripts":{"build":"tsc","typecheck":"tsc --noEmit","dev":"tsx src/main.ts"},"devDependencies":{"tsx":"4.20.6"}}

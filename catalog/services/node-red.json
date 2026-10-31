@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "node-red",
+  "name": "Node-RED",
+  "summary": "Connect devices and services using visual event-processing flows.",
+  "category": "automation",
+  "website": "https://github.com/node-red/node-red",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/node-red/node-red"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "node-red/node-red",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

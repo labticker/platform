@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "gitea",
+  "name": "Gitea",
+  "summary": "Manage private Git repositories and project collaboration tools.",
+  "category": "development",
+  "website": "https://github.com/go-gitea/gitea",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/go-gitea/gitea"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "go-gitea/gitea",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

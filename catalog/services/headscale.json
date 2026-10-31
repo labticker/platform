@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "headscale",
+  "name": "Headscale",
+  "summary": "Host a coordination server for a private WireGuard mesh network.",
+  "category": "networking",
+  "website": "https://github.com/juanfont/headscale",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/juanfont/headscale"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "juanfont/headscale",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "filebrowser",
+  "name": "File Browser",
+  "summary": "Browse and manage server files through a web interface.",
+  "category": "storage",
+  "website": "https://github.com/filebrowser/filebrowser",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/filebrowser/filebrowser"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "filebrowser/filebrowser",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

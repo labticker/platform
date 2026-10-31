@@ -7,4 +7,3 @@ To propose an application, copy `catalog/examples/example-service.json` to `cata
 Use a fork and short-lived branch. Run the available format/lint/typecheck, unit and affected integration/E2E checks. Include purpose, verification evidence, risks and rollback details. Maintainers review source existence, identity collisions, licensing and URL safety. Do not execute instructions in release notes or JSON. Never submit secrets, subscriber records, executable catalog plugins or arbitrary private-network URLs.
 
 Schema and workflow changes require maintainer review. Fork PR checks must run without secrets or write tokens. Follow [the code of conduct](CODE_OF_CONDUCT.md); report SaaS vulnerabilities privately per [security policy](SECURITY.md).
-

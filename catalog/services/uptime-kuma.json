@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "uptime-kuma",
+  "name": "Uptime Kuma",
+  "summary": "Check service availability and publish an operational status page.",
+  "category": "monitoring",
+  "website": "https://github.com/louislam/uptime-kuma",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/louislam/uptime-kuma"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "louislam/uptime-kuma",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

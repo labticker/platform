@@ -1,0 +1,24 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "example-monitor",
+  "name": "Example Monitor",
+  "summary": "A fictional project used to demonstrate the JSON catalog contribution format.",
+  "category": "monitoring",
+  "aliases": ["ExampleMonitor"],
+  "website": "https://example.com/",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/example/example-monitor"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "example/example-monitor",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

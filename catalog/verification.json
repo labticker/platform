@@ -1,0 +1,402 @@
+[
+  {
+    "slug": "home-assistant",
+    "checkedAt": "2026-10-31T01:02:44.848837+00:00",
+    "endpoint": "https://api.github.com/repos/home-assistant/core/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/home-assistant/core/releases/tag/2026.10.4",
+    "tag": "2026.10.4"
+  },
+  {
+    "slug": "immich",
+    "checkedAt": "2026-10-31T01:02:44.996925+00:00",
+    "endpoint": "https://api.github.com/repos/immich-app/immich/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/immich-app/immich/releases/tag/v3.3.5",
+    "tag": "v3.3.5"
+  },
+  {
+    "slug": "jellyfin",
+    "checkedAt": "2026-10-31T01:02:44.937904+00:00",
+    "endpoint": "https://api.github.com/repos/jellyfin/jellyfin/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/jellyfin/jellyfin/releases/tag/v12.4",
+    "tag": "v12.4"
+  },
+  {
+    "slug": "uptime-kuma",
+    "checkedAt": "2026-10-31T01:02:44.838835+00:00",
+    "endpoint": "https://api.github.com/repos/louislam/uptime-kuma/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/louislam/uptime-kuma/releases/tag/2.5.8",
+    "tag": "2.5.8"
+  },
+  {
+    "slug": "nextcloud",
+    "checkedAt": "2026-10-31T01:02:45.154988+00:00",
+    "endpoint": "https://api.github.com/repos/nextcloud/server/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/nextcloud/server/releases/tag/v35.0.2",
+    "tag": "v35.0.2"
+  },
+  {
+    "slug": "navidrome",
+    "checkedAt": "2026-10-31T01:02:45.523499+00:00",
+    "endpoint": "https://api.github.com/repos/navidrome/navidrome/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/navidrome/navidrome/releases/tag/v0.64.2",
+    "tag": "v0.64.2"
+  },
+  {
+    "slug": "actual-budget",
+    "checkedAt": "2026-10-31T01:02:45.519492+00:00",
+    "endpoint": "https://api.github.com/repos/actualbudget/actual/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/actualbudget/actual/releases/tag/v26.10.0",
+    "tag": "v26.10.0"
+  },
+  {
+    "slug": "paperless-ngx",
+    "checkedAt": "2026-10-31T01:02:45.378428+00:00",
+    "endpoint": "https://api.github.com/repos/paperless-ngx/paperless-ngx/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/paperless-ngx/paperless-ngx/releases/tag/v3.4.0",
+    "tag": "v3.4.0"
+  },
+  {
+    "slug": "mealie",
+    "checkedAt": "2026-10-31T01:02:45.575512+00:00",
+    "endpoint": "https://api.github.com/repos/mealie-recipes/mealie/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/mealie-recipes/mealie/releases/tag/v3.29.0",
+    "tag": "v3.29.0"
+  },
+  {
+    "slug": "vikunja",
+    "checkedAt": "2026-10-31T01:02:46.180624+00:00",
+    "endpoint": "https://api.github.com/repos/go-vikunja/vikunja/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/go-vikunja/vikunja/releases/tag/v2.7.1",
+    "tag": "v2.7.1"
+  },
+  {
+    "slug": "vaultwarden",
+    "checkedAt": "2026-10-31T01:02:45.916644+00:00",
+    "endpoint": "https://api.github.com/repos/dani-garcia/vaultwarden/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/dani-garcia/vaultwarden/releases/tag/1.37.4",
+    "tag": "1.37.4"
+  },
+  {
+    "slug": "authelia",
+    "checkedAt": "2026-10-31T01:02:46.200443+00:00",
+    "endpoint": "https://api.github.com/repos/authelia/authelia/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/authelia/authelia/releases/tag/v4.39.28",
+    "tag": "v4.39.28"
+  },
+  {
+    "slug": "authentik",
+    "checkedAt": "2026-10-31T01:02:46.141311+00:00",
+    "endpoint": "https://api.github.com/repos/goauthentik/authentik/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/goauthentik/authentik/releases/tag/version/2026.8.5",
+    "tag": "version/2026.8.5"
+  },
+  {
+    "slug": "traefik",
+    "checkedAt": "2026-10-31T01:02:46.612345+00:00",
+    "endpoint": "https://api.github.com/repos/traefik/traefik/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/traefik/traefik/releases/tag/v3.7.17",
+    "tag": "v3.7.17"
+  },
+  {
+    "slug": "caddy",
+    "checkedAt": "2026-10-31T01:02:49.727327+00:00",
+    "endpoint": "https://api.github.com/repos/caddyserver/caddy/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/caddyserver/caddy/releases/tag/v2.11.7",
+    "tag": "v2.11.7"
+  },
+  {
+    "slug": "adguard-home",
+    "checkedAt": "2026-10-31T01:02:46.821498+00:00",
+    "endpoint": "https://api.github.com/repos/AdguardTeam/AdGuardHome/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/AdguardTeam/AdGuardHome/releases/tag/v0.107.79",
+    "tag": "v0.107.79"
+  },
+  {
+    "slug": "pi-hole",
+    "checkedAt": "2026-10-31T01:02:46.553812+00:00",
+    "endpoint": "https://api.github.com/repos/pi-hole/pi-hole/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/pi-hole/pi-hole/releases/tag/v6.5",
+    "tag": "v6.5"
+  },
+  {
+    "slug": "headscale",
+    "checkedAt": "2026-10-31T01:02:47.119368+00:00",
+    "endpoint": "https://api.github.com/repos/juanfont/headscale/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/juanfont/headscale/releases/tag/v0.29.7",
+    "tag": "v0.29.7"
+  },
+  {
+    "slug": "wg-easy",
+    "checkedAt": "2026-10-31T01:02:47.014140+00:00",
+    "endpoint": "https://api.github.com/repos/wg-easy/wg-easy/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/wg-easy/wg-easy/releases/tag/v15.5.0",
+    "tag": "v15.5.0"
+  },
+  {
+    "slug": "ntfy",
+    "checkedAt": "2026-10-31T01:02:47.350069+00:00",
+    "endpoint": "https://api.github.com/repos/binwiederhier/ntfy/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/binwiederhier/ntfy/releases/tag/v2.35.0",
+    "tag": "v2.35.0"
+  },
+  {
+    "slug": "gotify",
+    "checkedAt": "2026-10-31T01:02:47.484817+00:00",
+    "endpoint": "https://api.github.com/repos/gotify/server/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/gotify/server/releases/tag/v3.1.1",
+    "tag": "v3.1.1"
+  },
+  {
+    "slug": "node-red",
+    "checkedAt": "2026-10-31T01:02:47.492818+00:00",
+    "endpoint": "https://api.github.com/repos/node-red/node-red/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/node-red/node-red/releases/tag/5.0.9",
+    "tag": "5.0.9"
+  },
+  {
+    "slug": "zigbee2mqtt",
+    "checkedAt": "2026-10-31T01:02:47.890780+00:00",
+    "endpoint": "https://api.github.com/repos/Koenkk/zigbee2mqtt/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/Koenkk/zigbee2mqtt/releases/tag/2.14.2",
+    "tag": "2.14.2"
+  },
+  {
+    "slug": "grafana",
+    "checkedAt": "2026-10-31T01:02:48.104192+00:00",
+    "endpoint": "https://api.github.com/repos/grafana/grafana/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/grafana/grafana/releases/tag/v13.3.0",
+    "tag": "v13.3.0"
+  },
+  {
+    "slug": "prometheus",
+    "checkedAt": "2026-10-31T01:02:48.482775+00:00",
+    "endpoint": "https://api.github.com/repos/prometheus/prometheus/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/prometheus/prometheus/releases/tag/v3.15.1",
+    "tag": "v3.15.1"
+  },
+  {
+    "slug": "netdata",
+    "checkedAt": "2026-10-31T01:02:48.581809+00:00",
+    "endpoint": "https://api.github.com/repos/netdata/netdata/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/netdata/netdata/releases/tag/v2.12.2",
+    "tag": "v2.12.2"
+  },
+  {
+    "slug": "beszel",
+    "checkedAt": "2026-10-31T01:02:48.854406+00:00",
+    "endpoint": "https://api.github.com/repos/henrygd/beszel/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/henrygd/beszel/releases/tag/v0.21.1",
+    "tag": "v0.21.1"
+  },
+  {
+    "slug": "gatus",
+    "checkedAt": "2026-10-31T01:02:48.896916+00:00",
+    "endpoint": "https://api.github.com/repos/TwiN/gatus/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/TwiN/gatus/releases/tag/v5.38.0",
+    "tag": "v5.38.0"
+  },
+  {
+    "slug": "gitea",
+    "checkedAt": "2026-10-31T01:02:50.138988+00:00",
+    "endpoint": "https://api.github.com/repos/go-gitea/gitea/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/go-gitea/gitea/releases/tag/v28.2.0",
+    "tag": "v28.2.0"
+  },
+  {
+    "slug": "woodpecker",
+    "checkedAt": "2026-10-31T01:02:49.489818+00:00",
+    "endpoint": "https://api.github.com/repos/woodpecker-ci/woodpecker/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/woodpecker-ci/woodpecker/releases/tag/v3.20.1",
+    "tag": "v3.20.1"
+  },
+  {
+    "slug": "portainer",
+    "checkedAt": "2026-10-31T01:02:49.412277+00:00",
+    "endpoint": "https://api.github.com/repos/portainer/portainer/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/portainer/portainer/releases/tag/2.45.3",
+    "tag": "2.45.3"
+  },
+  {
+    "slug": "dockge",
+    "checkedAt": "2026-10-31T01:02:49.814864+00:00",
+    "endpoint": "https://api.github.com/repos/louislam/dockge/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/louislam/dockge/releases/tag/1.5.0",
+    "tag": "1.5.0"
+  },
+  {
+    "slug": "homarr",
+    "checkedAt": "2026-10-31T01:02:49.948912+00:00",
+    "endpoint": "https://api.github.com/repos/homarr-labs/homarr/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/homarr-labs/homarr/releases/tag/v2.10.1",
+    "tag": "v2.10.1"
+  },
+  {
+    "slug": "homepage",
+    "checkedAt": "2026-10-31T01:02:50.099468+00:00",
+    "endpoint": "https://api.github.com/repos/gethomepage/homepage/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/gethomepage/homepage/releases/tag/v2.7.0",
+    "tag": "v2.7.0"
+  },
+  {
+    "slug": "linkding",
+    "checkedAt": "2026-10-31T01:02:50.169007+00:00",
+    "endpoint": "https://api.github.com/repos/sissbruecker/linkding/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/sissbruecker/linkding/releases/tag/v1.47.0",
+    "tag": "v1.47.0"
+  },
+  {
+    "slug": "linkwarden",
+    "checkedAt": "2026-10-31T01:02:50.331686+00:00",
+    "endpoint": "https://api.github.com/repos/linkwarden/linkwarden/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/linkwarden/linkwarden/releases/tag/v2.16.3",
+    "tag": "v2.16.3"
+  },
+  {
+    "slug": "karakeep",
+    "checkedAt": "2026-10-31T01:02:50.584904+00:00",
+    "endpoint": "https://api.github.com/repos/karakeep-app/karakeep/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/karakeep-app/karakeep/releases/tag/v0.34.1",
+    "tag": "v0.34.1"
+  },
+  {
+    "slug": "freshrss",
+    "checkedAt": "2026-10-31T01:02:50.522380+00:00",
+    "endpoint": "https://api.github.com/repos/FreshRSS/FreshRSS/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/FreshRSS/FreshRSS/releases/tag/1.30.4",
+    "tag": "1.30.4"
+  },
+  {
+    "slug": "miniflux",
+    "checkedAt": "2026-10-31T01:02:50.752947+00:00",
+    "endpoint": "https://api.github.com/repos/miniflux/v2/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/miniflux/v2/releases/tag/2.3.4",
+    "tag": "2.3.4"
+  },
+  {
+    "slug": "changedetection",
+    "checkedAt": "2026-10-31T01:02:50.708935+00:00",
+    "endpoint": "https://api.github.com/repos/dgtlmoon/changedetection.io/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/dgtlmoon/changedetection.io/releases/tag/0.60.10",
+    "tag": "0.60.10"
+  },
+  {
+    "slug": "syncthing",
+    "checkedAt": "2026-10-31T01:02:51.156875+00:00",
+    "endpoint": "https://api.github.com/repos/syncthing/syncthing/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/syncthing/syncthing/releases/tag/v2.1.7",
+    "tag": "v2.1.7"
+  },
+  {
+    "slug": "restic",
+    "checkedAt": "2026-10-31T01:02:51.193412+00:00",
+    "endpoint": "https://api.github.com/repos/restic/restic/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/restic/restic/releases/tag/v0.19.1",
+    "tag": "v0.19.1"
+  },
+  {
+    "slug": "rclone",
+    "checkedAt": "2026-10-31T01:02:51.710545+00:00",
+    "endpoint": "https://api.github.com/repos/rclone/rclone/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/rclone/rclone/releases/tag/v1.75.2",
+    "tag": "v1.75.2"
+  },
+  {
+    "slug": "filebrowser",
+    "checkedAt": "2026-10-31T01:02:51.213413+00:00",
+    "endpoint": "https://api.github.com/repos/filebrowser/filebrowser/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/filebrowser/filebrowser/releases/tag/v2.63.23",
+    "tag": "v2.63.23"
+  },
+  {
+    "slug": "seafile",
+    "checkedAt": "2026-10-31T01:02:51.477588+00:00",
+    "endpoint": "https://api.github.com/repos/haiwen/seafile/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/haiwen/seafile/releases/tag/v9.0.5",
+    "tag": "v9.0.5"
+  },
+  {
+    "slug": "audiobookshelf",
+    "checkedAt": "2026-10-31T01:02:51.570639+00:00",
+    "endpoint": "https://api.github.com/repos/advplyr/audiobookshelf/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/advplyr/audiobookshelf/releases/tag/v2.37.2",
+    "tag": "v2.37.2"
+  },
+  {
+    "slug": "calibre-web",
+    "checkedAt": "2026-10-31T01:02:51.641241+00:00",
+    "endpoint": "https://api.github.com/repos/janeczku/calibre-web/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/janeczku/calibre-web/releases/tag/0.6.27",
+    "tag": "0.6.27"
+  },
+  {
+    "slug": "komga",
+    "checkedAt": "2026-10-31T01:02:51.903164+00:00",
+    "endpoint": "https://api.github.com/repos/gotson/komga/releases?per_page=5",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/gotson/komga/releases/tag/1.29.2",
+    "tag": "1.29.2"
+  },
+  {
+    "slug": "docker-compose",
+    "checkedAt": "2026-10-31T01:03:08.313734+00:00",
+    "endpoint": "https://api.github.com/repos/docker/compose/releases?per_page=20",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/docker/compose/releases/tag/v5.6.1",
+    "tag": "v5.6.1"
+  },
+  {
+    "slug": "duplicati",
+    "checkedAt": "2026-10-31T01:03:12.743354+00:00",
+    "endpoint": "https://api.github.com/repos/duplicati/duplicati/releases?per_page=20",
+    "status": "verified-stable-release",
+    "releaseUrl": "https://github.com/duplicati/duplicati/releases/tag/v2.4.1.0_stable_2026-10-29",
+    "tag": "v2.4.1.0_stable_2026-10-29"
+  }
+]

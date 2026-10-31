@@ -11,4 +11,3 @@ Local foundation checks: `pnpm install`, `pnpm catalog:validate`, `pnpm test`, `
 Web deployment will use the actual assigned Fly HTTPS hostname. No domain purchase or custom DNS is required. Public email login and digests remain disabled until a separately verified owner-controlled sender is approved. No customer-facing AI, paid tiers, inventory agent, or CVE monitoring is included.
 
 License proposal: AGPL-3.0-only code and CC0-1.0 original catalog metadata, pending owner/legal selection and inclusion of complete license texts. Do not accept outside contributions until that decision is recorded. Imported material retains its own terms.
-

@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "duplicati",
+  "name": "Duplicati",
+  "summary": "Create encrypted backups and manage backup schedules through a web interface.",
+  "category": "storage",
+  "website": "https://github.com/duplicati/duplicati",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/duplicati/duplicati"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "duplicati/duplicati",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

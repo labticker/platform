@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "ntfy",
+  "name": "ntfy",
+  "summary": "Publish notifications to subscribed devices using HTTP requests.",
+  "category": "automation",
+  "website": "https://github.com/binwiederhier/ntfy",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/binwiederhier/ntfy"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "binwiederhier/ntfy",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

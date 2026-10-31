@@ -7,4 +7,3 @@ Maintainers review small PRs with passing required checks. Changes to source con
 Discuss roadmap changes in public issues without publishing private customer or contractual information. Moderators may remove abusive content and restrict repeat offenders, recording a fair explanation where safe. Conflicts of interest must be disclosed. Sponsors cannot purchase rankings, alert inclusion, warning severity or editorial decisions.
 
 Advertising remains absent through MVP/beta. Metrics never automatically declare PMF. Activation requires a separate explicit owner PMF and monetization decision, followed by provider, privacy and consent review.
-

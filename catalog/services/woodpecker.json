@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "woodpecker",
+  "name": "Woodpecker CI",
+  "summary": "Run automated build and test pipelines on owned infrastructure.",
+  "category": "development",
+  "website": "https://github.com/woodpecker-ci/woodpecker",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/woodpecker-ci/woodpecker"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "woodpecker-ci/woodpecker",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

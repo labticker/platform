@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/homelab-service-v1.json",
+  "title": "Homelab release monitoring catalog service",
+  "description": "Draft JSON Schema for Git-reviewed service definitions. Replace example.invalid schema ID when final product domain exists.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "slug", "name", "summary", "category", "website", "releaseSources", "catalog"],
+  "properties": {
+    "$schema": {"type": "string", "minLength": 1},
+    "schemaVersion": {"const": 1},
+    "slug": {"type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "minLength": 2, "maxLength": 80},
+    "name": {"type": "string", "minLength": 2, "maxLength": 100},
+    "summary": {"type": "string", "minLength": 10, "maxLength": 350},
+    "category": {"type": "string", "enum": ["virtualization", "storage", "networking", "monitoring", "media", "automation", "productivity", "security", "development", "other"]},
+    "aliases": {"type": "array", "uniqueItems": true, "maxItems": 12, "items": {"type": "string", "minLength": 2, "maxLength": 100}},
+    "website": {"type": "string", "format": "uri", "pattern": "^https://"},
+    "repository": {"type": "object", "additionalProperties": false, "required": ["provider", "url"], "properties": {"provider": {"enum": ["github", "gitlab", "other"]}, "url": {"type": "string", "format": "uri", "pattern": "^https://"}}},
+    "releaseSources": {"type": "array", "maxItems": 4, "items": {"oneOf": [
+      {"type": "object", "additionalProperties": false, "required": ["kind", "repository", "channel"], "properties": {"kind": {"const": "github-releases"}, "repository": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"}, "channel": {"const": "stable"}}},
+      {"type": "object", "additionalProperties": false, "required": ["kind", "projectUrl", "channel"], "properties": {"kind": {"const": "gitlab-releases"}, "projectUrl": {"type": "string", "format": "uri", "pattern": "^https://"}, "channel": {"const": "stable"}}},
+      {"type": "object", "additionalProperties": false, "required": ["kind", "url"], "properties": {"kind": {"const": "rss"}, "url": {"type": "string", "format": "uri", "pattern": "^https://"}}}
+    ]}},
+    "catalog": {"oneOf": [
+      {"type": "object", "additionalProperties": false, "required": ["mode"], "properties": {"mode": {"const": "add"}}},
+      {"type": "object", "additionalProperties": false, "required": ["mode", "upstreamKey"], "properties": {"mode": {"const": "override"}, "upstreamKey": {"type": "string", "minLength": 1, "maxLength": 200}}}
+    ]}
+  }
+}

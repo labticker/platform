@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "nextcloud",
+  "name": "Nextcloud",
+  "summary": "Host collaborative files and personal productivity services.",
+  "category": "productivity",
+  "website": "https://github.com/nextcloud/server",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/nextcloud/server"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "nextcloud/server",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

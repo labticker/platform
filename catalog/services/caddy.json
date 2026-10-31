@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "caddy",
+  "name": "Caddy",
+  "summary": "Serve websites and proxy traffic with automated HTTPS support.",
+  "category": "networking",
+  "website": "https://github.com/caddyserver/caddy",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/caddyserver/caddy"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "caddyserver/caddy",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}

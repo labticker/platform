@@ -1,0 +1,23 @@
+{
+  "$schema": "../schema/service.schema.json",
+  "schemaVersion": 1,
+  "slug": "gotify",
+  "name": "Gotify",
+  "summary": "Receive and distribute personal application notifications.",
+  "category": "automation",
+  "website": "https://github.com/gotify/server",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/gotify/server"
+  },
+  "releaseSources": [
+    {
+      "kind": "github-releases",
+      "repository": "gotify/server",
+      "channel": "stable"
+    }
+  ],
+  "catalog": {
+    "mode": "add"
+  }
+}
