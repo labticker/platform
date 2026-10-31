@@ -36,7 +36,7 @@ export const {handlers,auth,signIn,signOut}=NextAuth(()=>{
 export async function getCurrentUser():Promise<{id:string;role:string}|null>{
  if(!mockAuthAllowed(process.env))return null;
  const session=await auth();if(!session?.user?.id)return null;
- const [user]=await getDatabase().select({id:users.id,role:users.role,emailVerified:users.emailVerified}).from(users).where(and(eq(users.id,session.user.id),isNull(users.deletedAt)));
+ const [user]=await getDatabase().select({id:users.id,role:users.role,emailVerified:users.emailVerified}).from(users).where(and(eq(users.id,session.user.id),isNull(users.deletedAt))).catch(()=>[]);
  return user?.emailVerified?{id:user.id,role:user.role}:null;
 }
 

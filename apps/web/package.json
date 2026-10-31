@@ -12,6 +12,7 @@
   "dependencies": {
     "@auth/drizzle-adapter": "1.11.3",
     "@labticker/analytics": "workspace:*",
+    "@labticker/catalog": "workspace:*",
     "@labticker/database": "workspace:*",
     "@labticker/notifications": "workspace:*",
     "@labticker/reporting": "workspace:*",
