@@ -1,0 +1,48 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {PGlite} from '@electric-sql/pglite';
+import {drizzle} from 'drizzle-orm/pglite';
+import {migrate} from 'drizzle-orm/pglite/migrator';
+import {eq} from 'drizzle-orm';
+import * as schema from '@labticker/database/schema';
+import {parseService} from '@labticker/catalog';
+import {syncRegistry} from '../src/catalog.js';
+import {pollOneSource} from '../src/releases.js';
+import type {ReleaseAdapter,NormalizedRelease} from '@labticker/releases';
+test('runtime catalog and locked polling preserve baseline, history, cache and errors',async()=>{
+ const client=new PGlite();const db=drizzle(client,{schema});
+ try{
+  await migrate(db,{migrationsFolder:'../../drizzle'});
+  const definition=parseService({schemaVersion:1,slug:'test-project',name:'Test Project',summary:'Independent test project description',category:'monitoring',website:'https://example.com',releaseSources:[{kind:'github-releases',repository:'example/project',channel:'stable'}],catalog:{mode:'add'}});
+  const record={definition,origin:'custom_json' as const,sourceHash:'fixture',provenanceUrl:'catalog/services/test-project.json'};
+  await syncRegistry(db,[record],'abc1234');await syncRegistry(db,[record],'abc1234');
+  assert.equal((await db.select().from(schema.applications)).length,1);
+  assert.equal((await db.select().from(schema.releaseSources)).length,1);
+  const start=new Date('2026-03-01T10:00:00Z');
+  const fixture=(id:string,time:Date):NormalizedRelease=>({guid:id,sourceKey:'github-releases:example/project',versionTag:`v${id}.0.0`,title:'Fixture',notesText:'No breaking changes.',releaseUrl:`https://github.com/example/project/releases/tag/v${id}.0.0`,publishedAt:time,observedAt:time});
+  let batch=[fixture('1',start)];let calls=0;
+  const adapter:ReleaseAdapter={async fetchReleases(_source,cache){calls++;if(calls>1)assert.equal(cache?.etag,'fixture');return {status:'modified',cache:{etag:'fixture'},releases:batch};}};
+  assert.deepEqual(await pollOneSource(db,adapter,start),{status:'updated',inserted:1});
+  assert.equal((await db.select().from(schema.releases))[0]?.isBackfill,true);
+  assert.equal((await pollOneSource(db,adapter,start)).status,'idle');
+  const later=new Date('2026-03-01T12:00:00Z');batch=[fixture('1',later),fixture('2',later)];
+  assert.deepEqual(await pollOneSource(db,adapter,later),{status:'updated',inserted:1});
+  const stored=await db.select().from(schema.releases);
+  assert.equal(stored.length,2);assert.equal(stored.find(r=>r.sourceGuid==='1')?.firstSeenAt.toISOString(),start.toISOString());
+  assert.equal(stored.find(r=>r.sourceGuid==='2')?.isBackfill,false);
+  const failAt=new Date('2026-03-01T14:00:00Z');
+  assert.equal((await pollOneSource(db,{async fetchReleases(){throw new Error('untrusted secret text');}},failAt)).status,'failed');
+  const [source]=await db.select().from(schema.releaseSources);assert.ok(source);
+  assert.equal(source.lastOkAt?.toISOString(),later.toISOString());assert.ok(!source.lastError?.includes('secret'));
+  assert.equal((await db.select().from(schema.releases)).length,2);
+  await assert.rejects(syncRegistry(db,[{...record,definition:{...definition,slug:'renamed-project'}}],'def1234'));
+  await syncRegistry(db,[{...record,definition:{...definition,slug:'renamed-project',aliases:['test-project']}}],'def1234');
+  assert.equal((await db.select().from(schema.applications))[0]?.id,source.applicationId);
+  await db.update(schema.releaseSources).set({enabled:false}).where(eq(schema.releaseSources.id,source.id));
+  await syncRegistry(db,[{...record,definition:{...definition,slug:'renamed-project',aliases:['test-project']}}],'def1234');
+  assert.equal((await db.select().from(schema.releaseSources))[0]?.enabled,false);
+  await syncRegistry(db,[{...record,definition:{...definition,slug:'renamed-project',aliases:['test-project'],releaseSources:[]}}],'def1234');
+  assert.equal((await db.select().from(schema.releaseSources).where(eq(schema.releaseSources.id,source.id)))[0]?.enabled,false);
+  assert.equal((await db.select().from(schema.releases)).length,2);
+ }finally{await client.close();}
+});
