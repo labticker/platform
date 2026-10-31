@@ -1,10 +1,7 @@
-# Local core acceptance
+# Local acceptance
 
-This runbook reproduces the implemented core checks. A passing local run does not accept an entire product phase or authorize deployment, public sending, paid resources or advertising.
-
-## Prerequisites and full local run
-
-Use Node 22 and the package-manager version pinned in root package.json (pnpm 10.30.3). From the monorepo root:
+Passing these checks does not accept an entire phase or authorize deployment, public sending or advertising.
+Use Node 22.23.3 and pnpm 10.30.3. From the monorepo root:
 
 ```powershell
 pnpm install --frozen-lockfile
@@ -14,51 +11,72 @@ pnpm catalog:validate
 pnpm build
 ```
 
-No production credentials, vendor MCP connection, external database or email account is needed for these checks. Tests use fixture transport and isolated in-memory PGlite databases. Fresh installation needs access to the package registry. The production build must not depend on a live sender or scheduler.
+No production credentials, vendor MCP, external database or email account is needed. Tests use local PGlite,
+fixture transport and injected SDK calls. Registry access is needed only to install pinned dependencies.
 
-## Module map and focused checks
+## Current evidence
 
-| Module | Responsibility | Focused command |
+Root reports 60 tests: catalog 5, database 4, releases 13, notifications 16, analytics 3, reporting 3,
+telemetry 3, worker 12 and web auth adapter 1. Nine package typechecks, eight build scripts and 50 catalog validations passed. The final analytics correction passed affected strict/test checks, and all three analytics tests passed inside the final rebuilt Linux container.
+Treat its final recorded result as the final evidence. No full phase is complete.
+
+## Module map
+
+| Module | Acceptance scope | Focused test |
 |---|---|---|
-| packages/catalog | JSON Schema/runtime validation, URL screening and registry source contracts | pnpm --filter @labticker/catalog test |
-| packages/database | Drizzle schema, catalog identity-preserving repository and PostgreSQL constraints | pnpm --filter @labticker/database test |
-| packages/releases | GitHub intake, fetch-time network defenses, normalization/classification and backfill keys | pnpm --filter @labticker/releases test |
-| packages/notifications | Daily/weekly timing, eligible release selection, signed token helpers, ad-free composition and mock gateway; dormant placement interfaces | pnpm --filter @labticker/notifications test |
-| apps/worker | Disabled process scaffold plus offline database-to-mock integration acceptance fixture | pnpm --filter @labticker/worker test |
-| packages/analytics | Allowlisted route/event sanitizer, disabled adapter and cookieless PostHog configuration | pnpm --filter @labticker/analytics test |
-| apps/web | Branded catalog search/category/provenance preview, privacy page, gated analytics and honest health response | pnpm --filter @labticker/web build |
+| packages/catalog | JSON/runtime contracts, source definitions and static URL safety | pnpm --filter @labticker/catalog test |
+| packages/database | Migrations, constraints, identity/account history and consent | pnpm --filter @labticker/database test |
+| packages/releases | GitHub contracts, safe fetch, recent-history disclosure and advisory labels | pnpm --filter @labticker/releases test |
+| packages/notifications | DST, templates/tokens, mock gateway, dormant SDK guards/errors and zero ads | pnpm --filter @labticker/notifications test |
+| apps/worker | Polling and durable mock queue, claims/fencing/retry/suppression/receipts | pnpm --filter @labticker/worker test |
+| packages/analytics | Sanitized routes/events and disabled/DNT/opt-out modes | pnpm --filter @labticker/analytics test |
+| packages/telemetry | Real local webhook signatures, dedupe, tracking gates and suppression | pnpm --filter @labticker/telemetry test |
+| packages/reporting | Historical cohorts, aggregates-only reader/auth/thresholds | pnpm --filter @labticker/reporting test |
+| apps/web | First verification timestamp preserved across later logins | pnpm --filter @labticker/web test |
 
-Root pnpm test runs the suites through Turbo. Final root verification after the current review corrections passed 33 tests (catalog 5, releases 13, database 2, notifications 10, analytics 2, worker 1), seven package typechecks, six build scripts and 50 catalog validations. Retest affected packages after subsequent corrections. Prior cached results or earlier runs are not evidence for untested edits.
+Generate reviewed migrations with pnpm --filter @labticker/database generate. Generation does not apply
+SQL remotely. Local tests migrate isolated PGlite stores; managed Neon migration/concurrency/restore remain
+separate acceptance. Durable queue tests cover persisted payload retries, lease fencing, acceptance-only
+receipts, empty windows, suppression/cancellation quarantine, frequency changes, overflow and deduplication.
+No provider API request or real message is made by these tests. SDK tests inject the transport and require
+explicit sender/owner/domain gates; credentials alone do not enable live sending.
 
-## Database and offline release-to-digest acceptance
+Browser setup is in docs/LOCAL_RUNTIME.md. Observed local acceptance includes fictional magic-link sign-in,
+three monitors, persisted cadence/timezone/consent, ordinary-admin denial and unauthenticated aggregate 401.
+Earlier public-preview smoke showed no analytics/ad requests or storage in noop mode. Enabled PostHog
+requires its own production-mode browser storage/payload/replay/consent checks; noop evidence cannot prove it.
 
-Generate reviewed schema changes with:
+## External acceptance still required
 
-```powershell
-pnpm --filter @labticker/database generate
-```
+No actual Fly deployment, protected public repository/environment setup, Neon dev migration/restore drill,
+live sender or real email registration/send has been proven. Deployment preparation
+includes protected manual Actions, migration/backup references, source-based runtime image and web-only
+Fly preview targeting. Docker engine 29.9.2 built and smoke-tested a Linux image locally. The final digest-pinned/telemetry-disabled image rebuilt successfully from code revision eb14c15 and passed production-container smoke checks. Actual Fly runtime behavior remains unverified.
 
-The root drizzle directory contains generated SQL, snapshot and migration journal. Generation does not connect to Neon or apply schema changes remotely. A second generation should report no drift after the current migration is generated. Database tests apply that migration to PGlite, rerun it, test uniqueness/constraints and verify catalog renames retain stable application IDs, subscribers and release history.
+Keep public sending off until reviewed verified sender ownership, consent/unsubscribe, identity/contact,
+webhook auth-message correlation, quotas, retention/reconciliation, authorized recipient tests and protected
+activation. Never infer sender verification from fly.dev web hosting. The runtime mock-pilot does not select
+the dormant Resend adapter. Analytics and metric thresholds never activate advertising or declare PMF.
 
-The worker integration fixture parses an injected GitHub release, stores it with database deduplication, reads consent/verification/preferences/monitors from PostgreSQL, composes escaped HTML/plain text, retries an identical persisted payload through the mock inbox, records receipts after acceptance, and checks suppression/delivery exclusion. It makes no provider calls. It is not the durable runtime scheduler and does not prove cross-process leases, provider reconciliation or restart-safe live sends.
+## Disposable PostgreSQL concurrency acceptance
 
-## Browser preview smoke
+This is separate from the 60 unit/integration tests. Start a fresh trusted PostgreSQL 17 container with its
+port bound exclusively to 127.0.0.1:55433 and an empty database. The fixture uses local trust authentication;
+never bind it publicly or attach production data. Set LOCAL_DB_FIXTURE_ENABLED=true and run pnpm test:postgres.
+The script refuses production mode and any pre-existing public tables, applies migrations and writes fictional
+records. It uses two independent pools to prove one concurrent preparation, one acceptance/receipt for a shared
+claim and SKIP LOCKED progress past a locked oldest account. Discard the container afterward; rerunning against
+its populated database must fail. CI provisions a digest-pinned disposable PostgreSQL service for this command.
+No DATABASE_URL or production secret is accepted by this fixture; it targets only the fixed loopback port.
 
-```powershell
-pnpm --filter @labticker/web dev
-```
+Local image acceptance built labticker:local-acceptance and checked the production container's catalog of 50,
+mock/workerReady:false health, disabled public sign-in, mock inbox 404 and aggregate API 401, nonroot UID 1000
+and disabled worker entry. The final digest-pinned image with Next/Turbo telemetry disabled rebuilt successfully from code revision eb14c15 and repeated all smoke checks; its three analytics tests passed inside the container. Both named test containers were stopped/removed, retaining only the local acceptance image.
+These checks do not establish Neon backups, live sender readiness or a Fly deployment.
 
-Open the printed local URL. Confirm the LabTicker name/tagline and explicit mock-only preview state; search for Immich; change category filters; inspect provenance; visit /privacy and /api/health. Health should report preview, mock email and workerReady:false. With analytics disabled, inspect cookies/localStorage and requests: no analytics/ad vendor requests or tracking storage should appear. The root smoke observed one Immich result and only local static requests, with no ad requests or cookies/localStorage in noop mode. That browser run preceded the latest privacy-control addition and did not click/test the opt-out control.
-
-Enabled PostHog requires a separate production-mode browser acceptance with approved project settings, safe event payloads, no identifying URL/referrer/device enrichment, no tracking cookies/localStorage, no replay and no advertising requests. Noop browser evidence does not prove those guarantees. Account privacy preferences/DNT must suppress tracking as implemented and tested before launch.
-
-## Outstanding acceptance
-
-Runtime authentication, monitor management and account deletion are unimplemented. No background database queue, provider quota/retry reconciliation, signed Resend webhook route, unsubscribe HTTP handler, authoritative PMF aggregates/admin dashboard or aggregate-only reporting API is accepted. GitLab/RSS adapters remain pending even though the registry contract supports them. Source precedence across importers still needs reviewed mapping and reconciliation orchestration.
-
-No Neon migration, restore drill, protected GitHub production workflow or assigned Fly deployment has run. Local PGlite differs from a managed Neon environment and does not establish Neon concurrency, credentials, backups or rollback readiness. A live adapter smoke only verifies one upstream request at that moment; all routine tests remain offline and reproducible.
-
-Keep public email disabled until a separately verified owner-controlled sender, consent/unsubscribe flow, signed webhooks, sender identity, quota review and authorized recipient tests are ready. Fly hosting is not sender-domain verification. Keep advertising compiled to no-op; analytics configuration never grants PMF or monetization approval.
-
-## Runtime increment (2026-10-31)
-Local auth/dashboard/settings/unsubscribe, signed Resend webhook handling, historical state snapshots, PMF materialization/aggregate reporting and catalog/poll runtime now exist. See docs/LOCAL_RUNTIME.md for disposable browser setup and IMPLEMENTATION_STATUS.md for43tests/nine-package strictchecks and acceptance gaps. Earlier unimplemented statements above describe the prior core-only increment; current remaining gates are durable digest jobs, production auth/sender rollout, auth-message webhook mapping, retention/reconciliation, enabled analytics browser tests and cloud acceptance. No phase is complete.
+Analytics transport regression coverage preserves PostHog's required public project token while removing
+identifying properties and top-level $set/$set_once. Resend MCP read-only quota/domain calls now succeeded
+(100/day, 3000/month; one verified account domain observed without recording its private name). Project
+sender selection and owner activation remain pending; no send/resource mutation occurred. PostHog tooling
+is listed, but a transport failure prevented a successful learning/analytical call; analytics query acceptance
+is still outstanding. The final image rebuild includes the analytics transport correction.

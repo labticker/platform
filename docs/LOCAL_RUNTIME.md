@@ -49,10 +49,17 @@ Next.js incoming request and server-function development logs are disabled to pr
 Authentication diagnostics contain only error categories and codes. Auth pages send no-store/no-referrer.
 Deployment proxies must separately redact query strings; local logging configuration does not configure Fly.
 
-The worker can run explicit catalog-poll mode against a reviewed development database; see apps/worker/README.md.
-It cannot send email. Daily reporting recomputes 45 complete UTC dates for cohort maturation and delayed events.
+The worker supports catalog-poll and mock-pilot against a reviewed development database; see apps/worker/README.md. Mock-pilot additionally requires canonical HTTPS APP_URL, UNSUBSCRIBE_SECRET of at least 32 bytes, SENDER_IDENTITY and SENDER_CONTACT. The HTTP browser fixture origin above cannot be reused for digest composition. Do not weaken HTTPS: use offline queue tests or a separately reviewed HTTPS preview origin. Runtime delivery remains mock-only and never selects the dormant Resend SDK adapter. Daily reports refresh 45 complete UTC dates.
 The signed webhook tests use local cryptography and fixtures; no public webhook was registered.
 
 Production gates still include reviewed Neon migrations/backup recovery, role isolation, protected GitHub
-deployment, actual Fly hostname, durable digest queue/reconciliation and verified sender/consent review.
+deployment, actual Fly hostname, Neon queue/concurrency acceptance, ambiguous-send reconciliation and verified sender/consent review. The Fly preview workflow deploys web only. A Linux Docker image built and passed local production-container smoke checks; the final digest-pinned/telemetry-disabled rebuild from code revision eb14c15 succeeded and passed production-container smoke checks. Local queue tests cover persisted claims, stable retries, suppression and acceptance-only receipts. Normal backlog has no silent 30-day cutoff; bounded overflow is reconsidered after one minute. Cancelled work that already attempted acceptance remains quarantined pending reconciliation.
 Never use the unauthenticated fixture socket or mock authentication as production infrastructure.
+
+For real PostgreSQL concurrency acceptance, use an empty disposable trusted PostgreSQL 17 container bound only
+to 127.0.0.1:55433. Set LOCAL_DB_FIXTURE_ENABLED=true, then run pnpm test:postgres. The script refuses existing
+public tables and production mode, applies migrations and writes fictional data with two independent pools.
+Root executed concurrent prepare/shared-claim acceptance and locked-oldest-user progress checks successfully.
+The database is intentionally left populated; discard the container after the check rather than reusing it.
+The CI workflow now supplies its own digest-pinned PostgreSQL service without production secrets. This command
+is independent of the browser PGlite fixture at port 55432 and must not target a real subscriber database.
