@@ -1,0 +1,2 @@
+DROP INDEX "account_verification_baseline";--> statement-breakpoint
+CREATE UNIQUE INDEX "account_verification_baseline" ON "account_state_events" USING btree ("user_id") WHERE "account_state_events"."event_type" = 'verified_signup';

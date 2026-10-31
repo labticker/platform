@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { pgTable, uuid, text, timestamp, boolean, integer, jsonb, date, primaryKey, uniqueIndex, index, check } from 'drizzle-orm/pg-core';
+import { pgTable, bigserial, uuid, text, timestamp, boolean, integer, jsonb, date, primaryKey, uniqueIndex, index, check } from 'drizzle-orm/pg-core';
 const id = () => uuid('id').defaultRandom().primaryKey();
 const time = (name: string) => timestamp(name,{withTimezone:true,mode:'date'});
 const created = () => time('created_at').defaultNow().notNull();
@@ -31,3 +31,7 @@ export const digestMessageEngagement = pgTable('digest_message_engagement',{dige
 export const analyticsDailyAggregates = pgTable('analytics_daily_aggregates',{metricDate:date('metric_date').notNull(),metricName:text('metric_name').notNull(),dimensionKey:text('dimension_key').notNull(),metricValue:integer('metric_value').notNull(),computedAt:time('computed_at').notNull()},t=>[primaryKey({columns:[t.metricDate,t.metricName,t.dimensionKey]}),check('aggregate_nonnegative',sql`${t.metricValue} >= 0`)]);
 export const analyticsReportRuns = pgTable('analytics_report_runs',{id:id(),fromDate:date('from_date').notNull(),toDate:date('to_date').notNull(),status:text('status').notNull(),sourceWatermark:time('source_watermark'),completedAt:time('completed_at'),errorSummary:text('error_summary')});
 export const jobRuns = pgTable('job_runs',{id:id(),jobName:text('job_name').notNull(),startedAt:time('started_at').defaultNow().notNull(),finishedAt:time('finished_at'),status:text('status').notNull(),counts:jsonb('counts').notNull().default({}),error:text('error')});
+/** Authoritative post-mutation state history. Never exposed through aggregate readers. */
+export const accountStateEvents = pgTable('account_state_events',{
+ id:id(),sequence:bigserial('sequence',{mode:'number'}).notNull(),userId:uuid('user_id').notNull().references(()=>users.id,{onDelete:'cascade'}),eventType:text('event_type').notNull(),occurredAt:time('occurred_at').notNull(),activeMonitorCount:integer('active_monitor_count').notNull(),consented:boolean('consented').notNull(),enabled:boolean('enabled').notNull(),suppressed:boolean('suppressed').notNull(),
+},t=>[index('account_state_history').on(t.userId,t.occurredAt),uniqueIndex('account_verification_baseline').on(t.userId).where(sql`${t.eventType} = 'verified_signup'`),check('account_state_monitor_count',sql`${t.activeMonitorCount} >= 0`)]);
