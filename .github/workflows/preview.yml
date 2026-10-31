@@ -1,0 +1,53 @@
+name: Approved Fly catalog preview
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: Actual assigned Fly app slug
+        required: true
+      approval_reference:
+        description: Owner budget and public preview approval reference
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+jobs:
+  preview:
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa
+        with:
+          version: 10.30.3
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.23.3
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck && pnpm test && pnpm catalog:validate && pnpm build
+      - name: Generate assigned-origin preview config
+        env:
+          ACTUAL_APP: ${{ inputs.app }}
+          APPROVAL: ${{ inputs.approval_reference }}
+        run: |
+          [[ "$ACTUAL_APP" =~ ^[a-z][a-z0-9-]{2,50}$ ]] || exit 1
+          test -n "$APPROVAL"
+          sed "s/REPLACE_WITH_ASSIGNED_APP/$ACTUAL_APP/g" fly.example.toml > fly.toml
+      - name: Install pinned Fly CLI
+        run: |
+          curl -fsSL https://github.com/superfly/flyctl/releases/download/v0.5.1/flyctl_0.5.1_Linux_x86_64.tar.gz -o /tmp/flyctl.tar.gz
+          tar -xzf /tmp/flyctl.tar.gz -C /tmp flyctl
+          sudo install /tmp/flyctl /usr/local/bin/flyctl
+      - name: Deploy one web Machine without a database or worker
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: flyctl deploy --config fly.toml --process-groups web --remote-only --build-arg CATALOG_GIT_SHA="$GITHUB_SHA" --build-arg ANALYTICS_PROVIDER=noop --image-label "$GITHUB_SHA" --ha=false
+      - name: Smoke assigned HTTPS origin
+        env:
+          ACTUAL_APP: ${{ inputs.app }}
+        run: PREVIEW_ORIGIN="https://$ACTUAL_APP.fly.dev" pnpm exec tsx scripts/smoke-preview.ts

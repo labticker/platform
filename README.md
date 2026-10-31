@@ -10,4 +10,4 @@ Local foundation checks: `pnpm install`, `pnpm catalog:validate`, `pnpm test`, `
 
 Web deployment will use the actual assigned Fly HTTPS hostname. No domain purchase or custom DNS is required. Public email login and digests remain disabled until a separately verified owner-controlled sender is approved. No customer-facing AI, paid tiers, inventory agent, or CVE monitoring is included.
 
-License proposal: AGPL-3.0-only code and CC0-1.0 original catalog metadata, pending owner/legal selection and inclusion of complete license texts. Do not accept outside contributions until that decision is recorded. Imported material retains its own terms.
+Code is licensed under [MIT](LICENSE). Newly authored catalog metadata is dedicated under [CC0-1.0](catalog/LICENSE). Upstream descriptions, artwork, release notes and other third-party material retain their own terms. Owner approved these licenses on 2026-10-31.

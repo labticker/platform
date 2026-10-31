@@ -46,3 +46,18 @@ then obtain protected production recovery approval. Reconcile provider sends bef
 Before launch additionally prove actual assigned Fly HTTPS links, secret isolation, Neon dev migration and
 restore, worker heartbeat/process counts, release-to-mock receipt flow, no ad network requests and cookieless
 analytics privacy. Configure proxy query redaction separately from Next development logging.
+
+## Owner-approved initial rollout, 2026-10-31
+
+Owner approved Fly personal organization William, a US$15/month planning budget for one web and
+one worker plus usage-based traffic/build charges; begin with web only. No paid Neon upgrades,
+domain purchases or live email. GitHub labticker exists on Free and owner access was verified.
+Owner selected MIT code and CC0-1.0 original catalog metadata, and GitHub OAuth pilot with mock digests.
+Single-owner GitHub environment self-approval is explicitly allowed for initial setup; required reviewer
+approval stays enabled. A second maintainer is needed before enforcing prevent-self-review.
+
+The dedicated preview.yml workflow deploys only the public catalog, with no database/migrations, no worker,
+no public authentication and no analytics ingestion. It runs assigned-hostname smoke-preview.ts.
+It is an infrastructure preview, not the pilot/beta acceptance gate. The later OAuth pilot still requires
+Neon development migration/restore acceptance, protected production migration, registered GitHub OAuth app,
+privacy disclosures and PostHog project/MCP acceptance before public enrollment.

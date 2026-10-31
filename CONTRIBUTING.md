@@ -1,6 +1,6 @@
 # Contributing to LabTicker
 
-Contributor intake is pending final license selection and publication of complete license texts. Proposed terms: AGPL-3.0-only code; CC0-1.0 newly authored catalog descriptions/metadata. Imported data and artwork retain separate rights. Never submit copied descriptions or icons without verified reuse permission.
+Contributions to code use the MIT license in LICENSE. Newly authored catalog descriptions/metadata use CC0-1.0 in catalog/LICENSE. By submitting a contribution, you agree to these applicable terms. Imported data and artwork retain separate rights. Never submit copied descriptions or icons without verified reuse permission.
 
 To propose an application, copy `catalog/examples/example-service.json` to `catalog/services/<slug>.json`, replace fictional values with verified official project/source details, and run `pnpm catalog:validate`. A catalog addition should require one JSON file only. Supported sources are stable GitHub releases, GitLab releases, and reviewed HTTPS RSS/Atom. Empty sources mean not monitorable. Record verification evidence in the PR description.
 
