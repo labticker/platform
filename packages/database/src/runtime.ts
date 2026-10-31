@@ -13,7 +13,7 @@ export function getDatabase(){
  if(process.env.NODE_ENV!=='production'&&localRuntime.labtickerDevelopmentDatabase){database=localRuntime.labtickerDevelopmentDatabase;return database;}
  const connection=process.env.DATABASE_URL;
  if(!connection) throw new Error('Database is not configured');
- const url=new URL(connection);
+ let url:URL;try{url=new URL(connection);}catch{throw new Error('Database URL is invalid');}
  if(!['postgres:','postgresql:'].includes(url.protocol)) throw new Error('Unsupported database protocol');
  if(process.env.NODE_ENV==='production' && !['require','verify-full'].includes(url.searchParams.get('sslmode')??'')) throw new Error('Production database requires TLS');
  database=connect(connection);if(process.env.NODE_ENV!=='production')localRuntime.labtickerDevelopmentDatabase=database;return database;

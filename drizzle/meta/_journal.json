@@ -29,6 +29,20 @@
       "when": 1793413471716,
       "tag": "0003_plain_microbe",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793450859295,
+      "tag": "0004_natural_fixer",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793450982209,
+      "tag": "0005_bent_cable",
+      "breakpoints": true
     }
   ]
 }

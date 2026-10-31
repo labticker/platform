@@ -32,7 +32,12 @@ test('account repository authorizes monitors, records consent/state and preserve
   await savePreferences(db,user.id,{frequency:'weekly',timezone:'UTC',enabled:true,consent:true,nextDueAt:new Date('2026-01-05')},now);
   assert.equal((await db.select().from(schema.emailConsents))[0]?.policyVersion,'digest-v1');
   assert.equal((await accountDashboard(db,user.id)).consented,true);
+  await db.insert(schema.digests).values([
+   {userId:user.id,scheduledFor:new Date('2026-01-01T09:00Z'),windowFrom:now,windowTo:now,idempotencyKey:'fixture-attempted',status:'claimed',firstAttemptAt:now,leaseToken:'00000000-0000-4000-8000-000000000001',claimUntil:new Date('2026-01-02')},
+   {userId:user.id,scheduledFor:new Date('2026-01-01T10:00Z'),windowFrom:now,windowTo:now,idempotencyKey:'fixture-unsent',status:'pending'},
+  ]);
   await suppressAccount(db,user.id,new Date('2026-01-02'));state=await accountDashboard(db,user.id);assert.equal(state.suppressed,true);assert.equal(state.preferences?.enabled,false);
+  const canceled=await db.select().from(schema.digests);assert.equal(canceled.find(d=>d.idempotencyKey==='fixture-attempted')?.status,'failed');assert.equal(canceled.find(d=>d.idempotencyKey==='fixture-unsent')?.status,'skipped');assert.ok(canceled.every(d=>d.leaseToken===null&&d.claimUntil===null));
   await assert.rejects(()=>savePreferences(db,user.id,{frequency:'daily',timezone:'UTC',enabled:true,consent:true,nextDueAt:new Date('2026-01-05')},now),/unsuppressed/);
   const events=await db.select().from(schema.accountStateEvents).where(eq(schema.accountStateEvents.userId,user.id));assert.equal(events.length,3);assert.equal(events.at(-1)?.suppressed,true);
   await deleteAccount(db,user.id,new Date('2026-01-03'));await assert.rejects(()=>accountDashboard(db,user.id),/Verified/);const [deleted]=await db.select().from(schema.users).where(eq(schema.users.id,user.id));assert.equal(deleted?.email,user.id+'@deleted.invalid');assert.equal(deleted?.emailVerified?.getTime(),now.getTime());assert.equal((await db.select().from(schema.subscriptions)).length,0);

@@ -1,4 +1,4 @@
-import {and,eq,isNull,inArray,desc} from 'drizzle-orm';
+import {and,eq,isNull,inArray,desc,sql} from 'drizzle-orm';
 import type {PgDatabase,PgQueryResultHKT} from 'drizzle-orm/pg-core';
 import * as s from './schema.js';
 import {recordAccountState} from './history.js';
@@ -41,7 +41,7 @@ export async function savePreferences(db:Database,userId:string,input:{frequency
   if(input.consent&&!consent) await tx.insert(s.emailConsents).values({userId,consentType:'digest',policyVersion:'digest-v1',consentedAt:now,source:'settings'});
   if(!input.consent) await tx.update(s.emailConsents).set({withdrawnAt:now}).where(and(eq(s.emailConsents.userId,userId),isNull(s.emailConsents.withdrawnAt)));
   await recordAccountState(tx,userId,'preferences_updated',now);
-  if(!input.enabled||!input.consent) await tx.update(s.digests).set({status:'skipped',lastError:'Preference paused or consent withdrawn'}).where(and(eq(s.digests.userId,userId),inArray(s.digests.status,['pending','claimed'])));
+  if(!input.enabled||!input.consent) await tx.update(s.digests).set({status:sql`case when ${s.digests.firstAttemptAt} is null then 'skipped' else 'failed' end`,leaseToken:null,claimUntil:null,nextAttemptAt:null,lastError:'Preference paused or consent withdrawn'}).where(and(eq(s.digests.userId,userId),inArray(s.digests.status,['pending','claimed'])));
 
  });
 }
@@ -51,7 +51,7 @@ export async function suppressAccount(db:Database,userId:string,now=new Date()){
   await tx.update(s.users).set({suppressedAt:now}).where(and(eq(s.users.id,userId),isNull(s.users.suppressedAt)));
   await tx.update(s.preferences).set({enabled:false}).where(eq(s.preferences.userId,userId));
   await tx.update(s.emailConsents).set({withdrawnAt:now}).where(and(eq(s.emailConsents.userId,userId),isNull(s.emailConsents.withdrawnAt)));
-  await tx.update(s.digests).set({status:'skipped',lastError:'Unsubscribed'}).where(and(eq(s.digests.userId,userId),inArray(s.digests.status,['pending','claimed'])));
+  await tx.update(s.digests).set({status:sql`case when ${s.digests.firstAttemptAt} is null then 'skipped' else 'failed' end`,leaseToken:null,claimUntil:null,nextAttemptAt:null,lastError:'Unsubscribed'}).where(and(eq(s.digests.userId,userId),inArray(s.digests.status,['pending','claimed'])));
   await recordAccountState(tx,userId,'suppressed',now);
  });
 }
@@ -67,7 +67,7 @@ export async function deleteAccount(db:Database,userId:string,now=new Date()){
   await tx.delete(s.subscriptions).where(eq(s.subscriptions.userId,userId));
   await tx.update(s.emailConsents).set({withdrawnAt:now}).where(and(eq(s.emailConsents.userId,userId),isNull(s.emailConsents.withdrawnAt)));
   await tx.update(s.digests).set({payload:null}).where(eq(s.digests.userId,userId));
-  await tx.update(s.digests).set({status:'skipped',lastError:'Account deleted'}).where(and(eq(s.digests.userId,userId),inArray(s.digests.status,['pending','claimed'])));
+  await tx.update(s.digests).set({status:sql`case when ${s.digests.firstAttemptAt} is null then 'skipped' else 'failed' end`,leaseToken:null,claimUntil:null,nextAttemptAt:null,lastError:'Account deleted'}).where(and(eq(s.digests.userId,userId),inArray(s.digests.status,['pending','claimed'])));
   await recordAccountState(tx,userId,'account_deleted',now);
  });
 }
