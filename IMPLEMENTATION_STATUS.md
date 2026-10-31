@@ -27,3 +27,5 @@ Foundation tests passed (9 tests), including catalog and dormant notifications c
 Owner setup required: confirm license/legal terms and private security contact; authorize organization and vendor accounts; approve any billable Fly resource after quota/budget review; supply a verified existing sender domain when ready; configure protected production environment/reviewer and scoped secrets. No domain purchase is needed for web readiness.
 
 Final local increment verification: pnpm test passed 9 tests; pnpm catalog:validate passed 50 definitions; foundation agent executed pnpm build successfully and strict typechecks across all four packages. Next catalog preview and disabled worker scaffold exist. No browser E2E, live database, scheduler, auth, PostHog, Resend or deployment acceptance is claimed.
+
+Local tooling follow-up: installed Fly CLI 0.5.1, Neon CLI 8.15.1, Resend CLI 2.26.2; verified version commands. Registered five official MCP servers globally outside Git. OAuth remains pending; PostHog metadata discovery failed with a connection error. See docs/LOCAL_TOOLING_SETUP.md. No authenticated MCP calls or provisioning claimed.
