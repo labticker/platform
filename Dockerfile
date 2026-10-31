@@ -3,9 +3,14 @@ WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1 TURBO_TELEMETRY_DISABLED=1
 RUN npm install --global pnpm@10.30.3
 COPY . .
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=labticker-pnpm-store,target=/pnpm/store pnpm install --frozen-lockfile --store-dir /pnpm/store
 ARG CATALOG_GIT_SHA
 ENV CATALOG_GIT_SHA=$CATALOG_GIT_SHA
+ARG ANALYTICS_PROVIDER=noop
+ARG NEXT_PUBLIC_POSTHOG_KEY
+ARG NEXT_PUBLIC_POSTHOG_HOST
+# Next.js embeds these public project settings at build time. Defaults remain no-op.
+ENV ANALYTICS_PROVIDER=$ANALYTICS_PROVIDER NEXT_PUBLIC_POSTHOG_KEY=$NEXT_PUBLIC_POSTHOG_KEY NEXT_PUBLIC_POSTHOG_HOST=$NEXT_PUBLIC_POSTHOG_HOST
 RUN pnpm build
 
 FROM build AS runtime

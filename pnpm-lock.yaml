@@ -20,6 +20,9 @@ importers:
       drizzle-orm:
         specifier: 0.45.4
         version: 0.45.4(@electric-sql/pglite@0.5.13)(postgres@4.0.0)
+      esbuild:
+        specifier: 0.25.12
+        version: 0.25.12
       postgres:
         specifier: 4.0.0
         version: 4.0.0
@@ -41,6 +44,9 @@ importers:
       '@labticker/analytics':
         specifier: workspace:*
         version: link:../../packages/analytics
+      '@labticker/catalog':
+        specifier: workspace:*
+        version: link:../../packages/catalog
       '@labticker/database':
         specifier: workspace:*
         version: link:../../packages/database

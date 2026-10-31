@@ -1,1 +1,1 @@
-{"$schema":"https://turbo.build/schema.json","tasks":{"build":{"dependsOn":["^build"],"outputs":["dist/**",".next/**","!.next/cache/**"]},"typecheck":{"dependsOn":["^typecheck"]},"test":{"dependsOn":["^build"],"outputs":[]}}}
+{"$schema":"https://turbo.build/schema.json","tasks":{"build":{"dependsOn":["^build"],"env":["ANALYTICS_PROVIDER","NEXT_PUBLIC_POSTHOG_KEY","NEXT_PUBLIC_POSTHOG_HOST","CATALOG_GIT_SHA"],"outputs":["dist/**",".next/**","!.next/cache/**"]},"typecheck":{"dependsOn":["^typecheck"]},"test":{"dependsOn":["^build"],"outputs":[]}}}
