@@ -1,8 +1,8 @@
 import {randomUUID} from 'node:crypto';
-import {and,eq,lte,or,isNull,inArray,asc} from 'drizzle-orm';
+import {and,eq,gt,lte,or,isNull,inArray,asc,desc,notExists,sql} from 'drizzle-orm';
 import type {PgDatabase,PgQueryResultHKT} from 'drizzle-orm/pg-core';
 import * as s from '@labticker/database/schema';
-import {assertMockDelivery,composeDigest,eligibleReleases,nextDigestAt,signUnsubscribe} from '@labticker/notifications';
+import {assertMockDelivery,composeDigest,nextDigestAt,signUnsubscribe} from '@labticker/notifications';
 import type {DigestRelease,EmailGateway,EmailMessage} from '@labticker/notifications';
 
 type Database=PgDatabase<PgQueryResultHKT,typeof s>;
@@ -34,18 +34,20 @@ export async function prepareDueDigest(db:Database,config:DigestQueueConfig,now=
   // Re-read after the user lock; account mutations serialize on that lock too.
   const [preference]=await tx.select().from(s.preferences).where(eq(s.preferences.userId,user.id));
   if(!preference?.enabled||!preference.nextDueAt||preference.nextDueAt>now)return {status:'idle',items:0};
-  const consent=await tx.select({id:s.emailConsents.id}).from(s.emailConsents).where(and(eq(s.emailConsents.userId,user.id),eq(s.emailConsents.consentType,'digest'),isNull(s.emailConsents.withdrawnAt)));
-  const subscriptions=await tx.select().from(s.subscriptions).where(eq(s.subscriptions.userId,user.id));
-  const receipts=await tx.select({id:s.deliveryReceipts.releaseId}).from(s.deliveryReceipts).where(eq(s.deliveryReceipts.userId,user.id));
-  const reserved=await tx.select({id:s.digestItems.releaseId}).from(s.digestItems).innerJoin(s.digests,eq(s.digestItems.digestId,s.digests.id))
-   .where(and(eq(s.digests.userId,user.id),inArray(s.digests.status,reservedStatuses)));
-  const excluded=new Set([...receipts,...reserved].map(r=>r.id));
-  const rows=await tx.select({release:s.releases,app:s.applications}).from(s.releases)
+  const consent=await tx.select({id:s.emailConsents.id}).from(s.emailConsents).where(and(eq(s.emailConsents.userId,user.id),eq(s.emailConsents.consentType,'digest'),isNull(s.emailConsents.withdrawnAt))).limit(1);
+  const delivered=tx.select({id:s.deliveryReceipts.releaseId}).from(s.deliveryReceipts).where(and(eq(s.deliveryReceipts.userId,user.id),eq(s.deliveryReceipts.releaseId,s.releases.id)));
+  const reserved=tx.select({id:s.digestItems.releaseId}).from(s.digestItems).innerJoin(s.digests,eq(s.digestItems.digestId,s.digests.id))
+   .where(and(eq(s.digests.userId,user.id),inArray(s.digests.status,reservedStatuses),eq(s.digestItems.releaseId,s.releases.id)));
+  const hasWarnings=sql<boolean>`exists (select 1 from jsonb_array_elements(case when jsonb_typeof(${s.releases.warningFlags}) = 'array' then ${s.releases.warningFlags} else '[]'::jsonb end) as warning where jsonb_typeof(warning->'label') = 'string')`;
+  // Every exclusion is applied before LIMIT, so a large delivered/reserved/old
+  // history cannot hide eligible work. Only 101 bounded excerpts cross the DB
+  // boundary; the extra row indicates overflow without loading the whole backlog.
+  const rows=user.emailVerified&&consent.length?await tx.select({id:s.releases.id,appId:s.releases.applicationId,appName:s.applications.name,title:s.releases.title,tag:s.releases.tag,releaseUrl:s.releases.releaseUrl,notes:sql<string>`left(${s.releases.notesText}, 600)`,firstSeenAt:s.releases.firstSeenAt,publishedAt:s.releases.publishedAt,isBackfill:s.releases.isBackfill,warningFlags:s.releases.warningFlags}).from(s.releases)
    .innerJoin(s.applications,eq(s.applications.id,s.releases.applicationId))
    .innerJoin(s.subscriptions,and(eq(s.subscriptions.applicationId,s.releases.applicationId),eq(s.subscriptions.userId,user.id),eq(s.subscriptions.active,true)))
-   .where(and(eq(s.releases.isBackfill,false),lte(s.releases.firstSeenAt,now),eq(s.applications.isActive,true),eq(s.applications.hidden,false)));
-  const releases:DigestRelease[]=rows.map(({release:r,app})=>({id:r.id,appId:r.applicationId,appName:app.name,title:r.title,version:r.tag??'',releaseUrl:r.releaseUrl,notes:r.notesText,firstSeenAt:r.firstSeenAt,publishedAt:r.publishedAt,isBackfill:r.isBackfill,warnings:labels(r.warningFlags)}));
-  const unseen=eligibleReleases({verified:!!user.emailVerified,consented:consent.length>0,enabled:preference.enabled,suppressed:!!user.suppressedAt||!!user.deletedAt,subscriptions:subscriptions.map(subscription=>({appId:subscription.applicationId,enabledAt:subscription.enabledAt,active:subscription.active}))},releases,excluded,now);
+   .where(and(eq(s.releases.isBackfill,false),gt(s.releases.firstSeenAt,s.subscriptions.enabledAt),lte(s.releases.firstSeenAt,now),eq(s.applications.isActive,true),eq(s.applications.hidden,false),notExists(delivered),notExists(reserved)))
+   .orderBy(desc(hasWarnings),desc(sql`coalesce(${s.releases.publishedAt}, ${s.releases.firstSeenAt})`),asc(s.releases.id)).limit(101):[];
+  const unseen:DigestRelease[]=rows.map(row=>({id:row.id,appId:row.appId,appName:row.appName,title:row.title,version:row.tag??'',releaseUrl:row.releaseUrl,notes:row.notes.slice(0,600),firstSeenAt:row.firstSeenAt,publishedAt:row.publishedAt,isBackfill:row.isBackfill,warnings:labels(row.warningFlags)}));
   const eligible=unseen.slice(0,100);
   const id=randomUUID();
   const payload=eligible.length?composeDigest({to:user.email,releases:eligible,origin:config.origin,unsubscribeToken:signUnsubscribe(user.id,new Date(now.getTime()+365*DAY),config.unsubscribeSecret),senderIdentity:config.senderIdentity,senderContact:config.senderContact}):null;
@@ -108,7 +110,7 @@ export async function deliverClaim(db:Database,claim:DigestClaim,gateway:EmailGa
   if(!user.emailVerified||user.suppressedAt||user.deletedAt||!preference?.enabled||!consent.length)return skip('Account is no longer eligible');
   const payload=message(digest.payload);
   if(!payload||payload.to!==user.email)return skip('Stored message is no longer eligible');
-  const items=await tx.select({release:s.releases,app:s.applications}).from(s.digestItems)
+  const items=await tx.select({release:{id:s.releases.id,applicationId:s.releases.applicationId,firstSeenAt:s.releases.firstSeenAt,isBackfill:s.releases.isBackfill},app:{isActive:s.applications.isActive,hidden:s.applications.hidden}}).from(s.digestItems)
    .innerJoin(s.releases,eq(s.releases.id,s.digestItems.releaseId)).innerJoin(s.applications,eq(s.applications.id,s.releases.applicationId)).where(eq(s.digestItems.digestId,digest.id));
   if(!items.length)return skip('Empty digest');
   const subscriptions=await tx.select().from(s.subscriptions).where(eq(s.subscriptions.userId,user.id));

@@ -153,3 +153,31 @@ test('weekly overflow drains in minute windows without dropping unseen releases 
   assert.equal((await f.db.select().from(s.preferences))[0]?.nextDueAt?.toISOString(),'2026-03-16T09:00:00.000Z');
  }finally{await f.client.close();}
 });
+test('SQL exclusions precede the bounded candidate limit and snapshots retain only note excerpts',async()=>{
+ const f=await fixture(false);try{
+  const excludedTime=new Date('2026-03-09T08:59:00Z');
+  const flags=[{label:'Possible breaking change'}];
+  const excluded=await f.db.insert(s.releases).values(Array.from({length:360},(_,index)=>({...f.releaseValues,dedupeKey:`excluded-${index}`,firstSeenAt:index<120?new Date('2026-03-07T09:00:00Z'):excludedTime,publishedAt:excludedTime,warningFlags:flags}))).returning({id:s.releases.id});
+  const [deliveredDigest]=await f.db.insert(s.digests).values({userId:f.user.id,scheduledFor:new Date('2026-03-08T10:00:00Z'),windowFrom:new Date('2026-03-08T09:00:00Z'),windowTo:now,status:'sent',sentAt:now,idempotencyKey:'fixture-prior-sent',resendId:'fixture-accepted'}).returning();assert.ok(deliveredDigest);
+  await f.db.insert(s.deliveryReceipts).values(excluded.slice(120,240).map(release=>({userId:f.user.id,releaseId:release.id,digestId:deliveredDigest.id,resendId:'fixture-accepted',acceptedAt:now})));
+  const [reservedDigest]=await f.db.insert(s.digests).values({userId:f.user.id,scheduledFor:new Date('2026-03-08T11:00:00Z'),windowFrom:new Date('2026-03-08T09:00:00Z'),windowTo:now,status:'pending',idempotencyKey:'fixture-prior-pending'}).returning();assert.ok(reservedDigest);
+  await f.db.insert(s.digestItems).values(excluded.slice(240).map(release=>({digestId:reservedDigest.id,releaseId:release.id,snapshot:{fixture:true}})));
+  const fullNotes='Q'.repeat(250000);
+  const live=await f.db.insert(s.releases).values([
+   {...f.releaseValues,dedupeKey:'bounded-warning',title:'Warning release',notesText:fullNotes,firstSeenAt:new Date('2026-03-09T07:00:00Z'),warningFlags:flags},
+   {...f.releaseValues,dedupeKey:'bounded-normal',title:'Normal release',notesText:'Plain live notes',firstSeenAt:new Date('2026-03-09T08:00:00Z')},
+  ]).returning({id:s.releases.id});
+  const prepared=await prepareDueDigest(f.db,config,now);assert.equal(prepared.status,'queued');assert.equal(prepared.items,2);assert.ok(prepared.id);
+  const items=await f.db.select().from(s.digestItems).where(eq(s.digestItems.digestId,prepared.id));
+  assert.deepEqual(items.map(item=>item.releaseId).sort(),live.map(release=>release.id).sort());
+  for(const item of items)assert.ok((item.snapshot as {notes:string}).notes.length<=600);
+  const [source]=await f.db.select({notes:s.releases.notesText}).from(s.releases).where(eq(s.releases.dedupeKey,'bounded-warning'));assert.equal(source?.notes,fullNotes);
+  const [digest]=await f.db.select().from(s.digests).where(eq(s.digests.id,prepared.id));assert.ok(digest);
+  const payload=digest.payload as EmailMessage;
+  assert.ok(payload.html.indexOf('Warning release')<payload.html.indexOf('Normal release'));
+  assert.ok(payload.html.length<10000);assert.ok(payload.text.length<10000);
+  // Subsequent source-note edits do not regenerate a queued payload.
+  await f.db.update(s.releases).set({notesText:'changed upstream'}).where(eq(s.releases.dedupeKey,'bounded-warning'));
+  assert.deepEqual((await f.db.select().from(s.digests).where(eq(s.digests.id,prepared.id)))[0]?.payload,payload);
+ }finally{await f.client.close();}
+});
