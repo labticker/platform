@@ -1,13 +1,28 @@
 # Release intake core
 
-The GitHub adapter consumes documented published Releases API objects, excludes drafts and prereleases, supports conditional polling, and bounds pagination. An incomplete history fetch fails rather than silently reporting complete coverage. GitLab/RSS adapters remain pending; the catalog source contract is not a claim that every provider is implemented.
+The GitHub adapter consumes published Releases API objects, excludes drafts/prereleases and uses conditional
+polling with bounded pagination. Its declared policy is a recent-500 window, not exhaustive release history.
+When that boundary is reached, historyLimited explicitly marks the result and the worker exposes a limited
+source/application status. Existing release history is retained. Future cursor or deeper backfill support
+must preserve stable identities and baseline semantics. GitLab/RSS support is still pending.
 
-`SafeHttpClient` only accepts configured exact HTTPS hostnames. Every DNS answer must be public; a validated address is pinned into a fresh native HTTPS connection while retaining normal hostname/certificate validation. Redirects repeat hostname/DNS checks. DNS, redirects and body streaming share an absolute deadline; identity encoding and byte limits prevent compression/size surprises. Dependencies can be injected by trusted application/test code, never by catalog JSON. Source authorization, cadence/backoff and cross-source concurrency belong to the worker.
+SafeHttpClient accepts exact configured HTTPS hosts. Every DNS answer must be public; a validated address
+is pinned into native HTTPS while preserving hostname/certificate verification. Redirects repeat hostname
+and DNS checks. DNS/redirect/body work shares an absolute deadline; identity encoding and byte limits
+bound responses. Trusted application/test code can inject dependencies; catalog JSON cannot inject code.
+The worker persists cache/health and applies exponential retry delays from five minutes to six hours.
 
-Version schemes are explicit, reviewed configuration: unknown and calendar versions never generate semantic major warnings. Year-like semantic majors are conservatively excluded. Annotation evidence is bounded plain text and advisory only; renderers must still escape all text. No compatibility, vulnerability or exhaustive detection claim is made.
+Version schemes require reviewed configuration. Unknown/calendar schemes do not produce semantic major
+warnings, and year-like major values remain conservatively excluded. Evidence is bounded plain text and
+advisory only; renderers still escape it. No compatibility, vulnerability or exhaustive detection claim exists.
 
-Prepared release batches derive stable application-scoped keys and mark initial history as backfill. Database upserts must preserve the first observation time and original backfill marker on conflicts, never replacing them with a later scan. Delivery receipts and consent/subscription eligibility are separate database concerns. No delivery receipt is created by this package.
+Prepared batches derive application-scoped stable keys and mark initial history as backfill. Database conflicts
+preserve original firstSeenAt/backfill. Delivery eligibility, durable reservations and accepted receipts belong
+to the worker/database queue. This package never records a receipt or sends email.
 
-Tests use fixtures and injected transport/DNS, without internet calls. Live polling, retry/backoff/source-health persistence, GitLab/RSS, database integration and worker restart acceptance remain outstanding.
+Tests use fixtures/injected transport and DNS without internet. Prior read-only Linkding smoke separately
+verified one live upstream request; it is not sustained polling or cloud acceptance. Multi-process Neon,
+restart/load tests and broader provider support remain outstanding.
 
-Primary contracts consulted: [GitHub releases API](https://docs.github.com/en/rest/releases/releases#list-releases), [Node HTTPS](https://nodejs.org/api/https.html), [Node DNS](https://nodejs.org/api/dns.html), [node-semver](https://github.com/npm/node-semver).
+Primary references: https://docs.github.com/en/rest/releases/releases#list-releases ;
+https://nodejs.org/api/https.html ; https://nodejs.org/api/dns.html ; https://github.com/npm/node-semver.

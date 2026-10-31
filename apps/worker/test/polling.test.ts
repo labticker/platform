@@ -34,6 +34,8 @@ test('runtime catalog and locked polling preserve baseline, history, cache and e
   assert.equal((await pollOneSource(db,{async fetchReleases(){throw new Error('untrusted secret text');}},failAt)).status,'failed');
   const [source]=await db.select().from(schema.releaseSources);assert.ok(source);
   assert.equal(source.lastOkAt?.toISOString(),later.toISOString());assert.ok(!source.lastError?.includes('secret'));
+  assert.equal(source.failureCount,1);assert.equal(source.nextPollAt?.getTime(),failAt.getTime()+5*60*1000);
+  assert.equal((await pollOneSource(db,adapter,new Date(failAt.getTime()+1000))).status,'idle');
   assert.equal((await db.select().from(schema.releases)).length,2);
   await assert.rejects(syncRegistry(db,[{...record,definition:{...definition,slug:'renamed-project'}}],'def1234'));
   await syncRegistry(db,[{...record,definition:{...definition,slug:'renamed-project',aliases:['test-project']}}],'def1234');

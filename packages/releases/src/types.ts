@@ -24,7 +24,7 @@ export interface SourceCache {
 
 export type ReleasePollResult =
   | { readonly status: 'not-modified'; readonly cache: SourceCache }
-  | { readonly status: 'modified'; readonly cache: SourceCache; readonly releases: readonly NormalizedRelease[] };
+  | { readonly status: 'modified'; readonly cache: SourceCache; readonly releases: readonly NormalizedRelease[]; readonly historyTruncated?: true };
 
 export interface ReleaseAdapter {
   fetchReleases(source: ReleaseSource, cache?: SourceCache): Promise<ReleasePollResult>;

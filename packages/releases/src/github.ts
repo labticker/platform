@@ -55,6 +55,7 @@ export class GitHubReleasesAdapter implements ReleaseAdapter {
     private readonly http: GitHubHttpClient = new SafeHttpClient({ allowedHosts: ['api.github.com'] }),
     private readonly now: () => Date = () => new Date(),
     private readonly maxPages = 5,
+    private readonly historyMode: 'complete'|'recent-window' = 'complete',
   ) {}
 
   async fetchReleases(source: ReleaseSource, cache: SourceCache = {}): Promise<ReleasePollResult> {
@@ -75,7 +76,9 @@ export class GitHubReleasesAdapter implements ReleaseAdapter {
       releases.push(...parseGitHubReleases(payload, source.repository, observedAt));
       if ((payload as unknown[]).length < 100) return { status: 'modified', cache: updatedCache, releases };
     }
-    // Do not silently mark a source successful when its bounded history fetch was incomplete.
+    // Explicit recent-window mode behaves like a bounded feed. Callers must disclose
+    // the coverage limit; complete-history callers continue to fail closed.
+    if(this.historyMode==='recent-window') return {status:'modified',cache:updatedCache,releases,historyTruncated:true};
     throw new Error('GitHub release history exceeds pagination bound');
   }
 }

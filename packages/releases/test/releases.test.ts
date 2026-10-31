@@ -58,6 +58,10 @@ test('GitHub polling does not silently lose pages or convert outages to empty su
   await assert.rejects(unavailable.fetchReleases(source), /HTTP 429/);
   const incomplete = new GitHubReleasesAdapter({ async get() { return { status: 200, headers: {}, body: JSON.stringify(Array.from({ length: 100 }, () => fixture())) }; } }, () => observedAt, 1);
   await assert.rejects(incomplete.fetchReleases(source), /pagination bound/);
+  const recent=new GitHubReleasesAdapter({async get(){return {status:200,headers:{},body:JSON.stringify(Array.from({length:100},(_,index)=>fixture({id:index+1})))};}},()=>observedAt,1,'recent-window');
+  const limited=await recent.fetchReleases(source);
+  assert.equal(limited.status==='modified'&&limited.historyTruncated,true);
+  assert.equal(limited.status==='modified'&&limited.releases.length,100);
 });
 
 test('normalization only labels explicit reliable semantic version increments', () => {
