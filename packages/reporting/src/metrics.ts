@@ -1,0 +1,15 @@
+export const metrics=['verified_signups','activation_eligible','activated_three_monitors','retention_eligible','retained_day30','cohort_unmeasured','digest_due','digest_due_accepted','digest_accepted','digest_delivered','digest_bounced','digest_complained','digest_tracked_open_delivered','digest_reported_open_estimated','digest_tracked_click_delivered','digest_reported_click','unsubscribe_accounts','unsubscribe_at_risk','unsubscribe_from_at_risk','suppression_unclassified_accounts','source_enabled','source_disabled','source_fresh','source_stale','source_unpolled','source_failing','source_history_limited'] as const;
+export type Metric=typeof metrics[number];
+export const gaugeMetrics=new Set<Metric>(['source_enabled','source_disabled','source_fresh','source_stale','source_unpolled','source_failing','source_history_limited']);
+export const rateDefinitions=[
+ {name:'activation',numerator:'activated_three_monitors',denominator:'activation_eligible',description:'Verified signup cohorts matured seven days; three simultaneous monitors within that window.'},
+ {name:'retention_day30',numerator:'retained_day30',denominator:'retention_eligible',description:'Verified signup cohorts matured thirty days; consented, enabled, unsuppressed and monitoring at day thirty.'},
+ {name:'digest_coverage',numerator:'digest_due_accepted',denominator:'digest_due',description:'Accepted due digests divided by nonempty due digests in the same scheduled-date cohort.'},
+ {name:'delivery',numerator:'digest_delivered',denominator:'digest_accepted',description:'Delivered messages divided by accepted messages in the same acceptance-date cohort.'},
+ {name:'bounce',numerator:'digest_bounced',denominator:'digest_accepted',description:'Bounced messages divided by accepted messages in the same acceptance-date cohort.'},
+ {name:'complaint',numerator:'digest_complained',denominator:'digest_accepted',description:'Complained messages divided by accepted messages in the same acceptance-date cohort.'},
+ {name:'reported_open_estimated',numerator:'digest_reported_open_estimated',denominator:'digest_tracked_open_delivered',description:'Estimated and unreliable: opened delivered tracked messages divided by delivered tracked messages. Apple MPP/proxies distort this rate.'},
+ {name:'reported_click',numerator:'digest_reported_click',denominator:'digest_tracked_click_delivered',description:'Clicked delivered tracked messages divided by delivered tracked messages; link scanners can inflate clicks.'},
+ {name:'unsubscribe',numerator:'unsubscribe_from_at_risk',denominator:'unsubscribe_at_risk',description:'Distinct observed consenting/enabled/unsuppressed accounts withdrawing during a UTC day, divided by observed accounts at risk during that day; multiday totals are account-days.'},
+ {name:'source_freshness',numerator:'source_fresh',denominator:'source_enabled',description:'Latest observed enabled sources with success within four hours divided by enabled sources, at the same snapshot.'},
+] as const satisfies readonly {name:string;numerator:Metric;denominator:Metric;description:string}[];

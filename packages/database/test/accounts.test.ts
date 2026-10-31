@@ -40,6 +40,9 @@ test('account repository authorizes monitors, records consent/state and preserve
   const canceled=await db.select().from(schema.digests);assert.equal(canceled.find(d=>d.idempotencyKey==='fixture-attempted')?.status,'failed');assert.equal(canceled.find(d=>d.idempotencyKey==='fixture-unsent')?.status,'skipped');assert.ok(canceled.every(d=>d.leaseToken===null&&d.claimUntil===null));
   await assert.rejects(()=>savePreferences(db,user.id,{frequency:'daily',timezone:'UTC',enabled:true,consent:true,nextDueAt:new Date('2026-01-05')},now),/unsuppressed/);
   const events=await db.select().from(schema.accountStateEvents).where(eq(schema.accountStateEvents.userId,user.id));assert.equal(events.length,3);assert.equal(events.at(-1)?.suppressed,true);
+  assert.equal(events.at(-1)?.eventType,'unsubscribe_completed');
+  await suppressAccount(db,user.id,new Date('2026-01-02T12:00:00Z'));
+  assert.equal((await db.select().from(schema.accountStateEvents).where(eq(schema.accountStateEvents.userId,user.id))).filter(event=>event.eventType==='unsubscribe_completed').length,1);
   await deleteAccount(db,user.id,new Date('2026-01-03'));await assert.rejects(()=>accountDashboard(db,user.id),/Verified/);const [deleted]=await db.select().from(schema.users).where(eq(schema.users.id,user.id));assert.equal(deleted?.email,user.id+'@deleted.invalid');assert.equal(deleted?.emailVerified?.getTime(),now.getTime());assert.equal((await db.select().from(schema.subscriptions)).length,0);
  }finally{await client.close();}
 });

@@ -15,4 +15,24 @@ export function cohortCounts(accounts:readonly User[],history:readonly State[],s
  }
  return {activationEligible,activated,retentionEligible,retained,unmeasured};
 }
+/** UTC account-day withdrawal cohort. Generic historical suppression is never
+ * reclassified as an unsubscribe; provider bounces/complaints are separate events.
+ */
+export function unsubscribeCounts(accounts:readonly User[],history:readonly State[],start:Date,end:Date){
+ const intents=new Set<string>(),risk=new Set<string>(),withdrawals=new Set<string>(),unclassified=new Set<string>();
+ for(const user of accounts){
+  if(!user.emailVerified||user.emailVerified>=end)continue;
+  const events=history.filter(e=>e.userId===user.id&&e.occurredAt<end).sort((a,b)=>a.occurredAt.getTime()-b.occurredAt.getTime()||a.sequence-b.sequence);
+  const eligible=(event:State|undefined)=>!!event&&event.consented&&event.enabled&&!event.suppressed;
+  let prior=events.filter(e=>e.occurredAt<start).at(-1);if(eligible(prior))risk.add(user.id);
+  for(const event of events.filter(e=>e.occurredAt>=start)){
+   if(event.eventType==='unsubscribe_completed'||event.eventType==='digest_consent_withdrawn'){
+    intents.add(user.id);if(risk.has(user.id))withdrawals.add(user.id);
+   }
+   if(event.eventType==='suppressed')unclassified.add(user.id);
+   if(eligible(event))risk.add(user.id);prior=event;
+  }
+ }
+ return {accounts:intents.size,atRisk:risk.size,fromAtRisk:withdrawals.size,unclassified:unclassified.size};
+}
 

@@ -3,7 +3,8 @@ import {setTimeout as delay} from 'node:timers/promises';
 import {loadRegistry} from '@labticker/catalog';
 import {syncRegistry} from './catalog.js';
 import {pollOneSource} from './releases.js';
-import {materializeDaily} from '@labticker/reporting';
+import {materializeDaily,materializeSourceSnapshot} from '@labticker/reporting';
+import {runWorkerJob} from '@labticker/database/operations';
 import {MockEmailGateway,appOrigin} from '@labticker/notifications';
 import {prepareDueDigest,sendOneDigest,type DigestQueueConfig} from './digests.js';
 async function main(){
@@ -30,27 +31,37 @@ async function main(){
  while(running){
   const now=new Date();
   try{
+   await runWorkerJob(db,'worker-tick',async()=>{
+   const counts={catalogEntries:0,polledSources:0,failedSources:0,insertedReleases:0,preparedDigests:0,acceptedDigests:0,skippedDigests:0,retriedDigests:0,failedDigests:0,reportDates:0};
    // Drain durable work before potentially slow source polling/report refreshes.
    if(digestConfig){
-    for(let index=0;running&&index<25;index++){const prepared=await prepareDueDigest(db,digestConfig,new Date());if(prepared.status==='idle')break;console.log(JSON.stringify({service:'labticker-worker',job:'digest-prepare',status:prepared.status,items:prepared.items}));}
-    for(let index=0;running&&index<25;index++){const status=await sendOneDigest(db,gateway,digestConfig,new Date());if(status==='idle')break;console.log(JSON.stringify({service:'labticker-worker',job:'digest-send',status}));}
+    for(let index=0;running&&index<25;index++){const prepared=await prepareDueDigest(db,digestConfig,new Date());if(prepared.status==='idle')break;if(prepared.status==='queued')counts.preparedDigests++;else counts.skippedDigests++;console.log(JSON.stringify({service:'labticker-worker',job:'digest-prepare',status:prepared.status,items:prepared.items}));}
+    for(let index=0;running&&index<25;index++){const status=await sendOneDigest(db,gateway,digestConfig,new Date());if(status==='idle')break;if(status==='sent')counts.acceptedDigests++;if(status==='retry')counts.retriedDigests++;if(status==='failed')counts.failedDigests++;if(status==='skipped')counts.skippedDigests++;console.log(JSON.stringify({service:'labticker-worker',job:'digest-send',status}));}
     gateway.inbox.length=0; // Never expose or retain a process-local subscriber inbox.
    }
    if(now.getTime()-lastCatalogSync>=86400000){
     const count=await syncRegistry(db,await loadRegistry(),revision,now);lastCatalogSync=now.getTime();
+    counts.catalogEntries=count;
     console.log(JSON.stringify({service:'labticker-worker',job:'catalog-sync',status:'ok',count}));
    }
    // Bound feed work per tick so large catalogs cannot starve due digest checks.
    for(let index=0;running&&index<5;index++){
     const result=await pollOneSource(db,undefined,new Date());
     if(result.status==='idle')break;
+    counts.polledSources++;counts.insertedReleases+=result.inserted;if(result.status==='failed')counts.failedSources++;
     console.log(JSON.stringify({service:'labticker-worker',job:'release-poll',...result}));
    }
+   if(running)await materializeSourceSnapshot(db,new Date());
    if(running&&now.getTime()-lastReportRefresh>=86400000){
-    // 30-day cohort maturation plus 14 days for delayed engagement events.
-    for(let days=45;running&&days>=1;days--) await materializeDaily(db,new Date(now.getTime()-days*86400000).toISOString().slice(0,10),now);
+    // Bootstrap both 30-day windows plus the 30-day retention maturity offset,
+    // then revisit cohort maturation
+    // plus 14 days for delayed engagement events on subsequent daily refreshes.
+    const lookback=lastReportRefresh===0?90:45;
+    for(let days=lookback;running&&days>=1;days--){await materializeDaily(db,new Date(now.getTime()-days*86400000).toISOString().slice(0,10),now);counts.reportDates++;}
     if(running){lastReportRefresh=now.getTime();console.log(JSON.stringify({service:'labticker-worker',job:'aggregate-refresh',status:'ok'}));}
    }
+   return {value:undefined,counts};
+   });
   }catch{console.error(JSON.stringify({service:'labticker-worker',status:'degraded',error:'Worker tick failed'}));}
   if(running) await delay(60000,undefined,{signal:shutdown.signal}).catch(()=>{});
  }

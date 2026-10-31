@@ -1,0 +1,1 @@
+CREATE INDEX "job_runs_recent" ON "job_runs" USING btree ("job_name","started_at");

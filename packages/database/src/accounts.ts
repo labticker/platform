@@ -40,6 +40,7 @@ export async function savePreferences(db:Database,userId:string,input:{frequency
   const [consent]=await tx.select().from(s.emailConsents).where(and(eq(s.emailConsents.userId,userId),eq(s.emailConsents.consentType,'digest'),isNull(s.emailConsents.withdrawnAt)));
   if(input.consent&&!consent) await tx.insert(s.emailConsents).values({userId,consentType:'digest',policyVersion:'digest-v1',consentedAt:now,source:'settings'});
   if(!input.consent) await tx.update(s.emailConsents).set({withdrawnAt:now}).where(and(eq(s.emailConsents.userId,userId),isNull(s.emailConsents.withdrawnAt)));
+  if(!input.consent&&consent) await recordAccountState(tx,userId,'digest_consent_withdrawn',now);
   await recordAccountState(tx,userId,'preferences_updated',now);
   if(!input.enabled||!input.consent) await tx.update(s.digests).set({status:sql`case when ${s.digests.firstAttemptAt} is null then 'skipped' else 'failed' end`,leaseToken:null,claimUntil:null,nextAttemptAt:null,lastError:'Preference paused or consent withdrawn'}).where(and(eq(s.digests.userId,userId),inArray(s.digests.status,['pending','claimed'])));
 
@@ -52,7 +53,7 @@ export async function suppressAccount(db:Database,userId:string,now=new Date()){
   await tx.update(s.preferences).set({enabled:false}).where(eq(s.preferences.userId,userId));
   await tx.update(s.emailConsents).set({withdrawnAt:now}).where(and(eq(s.emailConsents.userId,userId),isNull(s.emailConsents.withdrawnAt)));
   await tx.update(s.digests).set({status:sql`case when ${s.digests.firstAttemptAt} is null then 'skipped' else 'failed' end`,leaseToken:null,claimUntil:null,nextAttemptAt:null,lastError:'Unsubscribed'}).where(and(eq(s.digests.userId,userId),inArray(s.digests.status,['pending','claimed'])));
-  await recordAccountState(tx,userId,'suppressed',now);
+  await recordAccountState(tx,userId,'unsubscribe_completed',now);
  });
 }
 /** Remove contact/auth/profile data; retain pseudonymous compliance and delivery receipts. */

@@ -43,6 +43,13 @@
       "when": 1793450982209,
       "tag": "0005_bent_cable",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793457221539,
+      "tag": "0006_noisy_storm",
+      "breakpoints": true
     }
   ]
 }

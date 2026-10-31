@@ -40,7 +40,10 @@ function inspectStrings(value:unknown):void {
   if(Array.isArray(value)) value.forEach(inspectStrings);
   else if(value && typeof value==='object') Object.values(value).forEach(inspectStrings);
 }
-const root=resolve(fileURLToPath(new URL('../../../',import.meta.url)));
+// Keep this a module-relative filesystem URL. Webpack treats a literal new URL
+// with import.meta.url as a browser asset request and cannot bundle a repository root.
+const sourceModuleUrl=import.meta.url;
+const root=resolve(fileURLToPath(new URL('../../../',sourceModuleUrl)));
 const ajv=new Ajv2020({allErrors:true});
 (addFormats as unknown as (ajv:Ajv2020)=>void)(ajv);
 const validate=ajv.compile(JSON.parse(await readFile(resolve(root,'catalog/schema/service.schema.json'),'utf8')));

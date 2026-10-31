@@ -53,7 +53,7 @@ export async function processResendEvent(db:PgDatabase<PgQueryResultHKT,typeof s
       await tx.update(schema.preferences).set({enabled:false,nextDueAt:null}).where(eq(schema.preferences.userId,digest.userId));
       await tx.update(schema.digests).set({status:sql`case when ${schema.digests.firstAttemptAt} is null then 'skipped' else 'failed' end`,leaseToken:null,claimUntil:null,nextAttemptAt:null,lastError:'Provider suppression'}).where(and(eq(schema.digests.userId,digest.userId),inArray(schema.digests.status,['pending','claimed'])));
       await tx.update(schema.emailConsents).set({withdrawnAt:now}).where(and(eq(schema.emailConsents.userId,digest.userId),eq(schema.emailConsents.consentType,'digest'),isNull(schema.emailConsents.withdrawnAt)));
-      await recordAccountState(tx,digest.userId,'suppressed',now);
+      await recordAccountState(tx,digest.userId,event.type==='email.bounced'?'email_bounced':'email_complained',now);
     }
     await tx.update(schema.resendWebhookEvents).set({processingStatus:'processed',processedAt:now}).where(eq(schema.resendWebhookEvents.id,record.id));
     return 'processed';

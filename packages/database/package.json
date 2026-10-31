@@ -8,7 +8,9 @@
     "./schema": "./src/schema.ts",
     "./runtime": "./src/runtime.ts",
     "./accounts": "./src/accounts.ts",
-    "./auth-policy": "./src/auth-policy.ts"
+    "./auth-policy": "./src/auth-policy.ts",
+    "./source-admin": "./src/source-admin.ts",
+    "./operations": "./src/operations.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
