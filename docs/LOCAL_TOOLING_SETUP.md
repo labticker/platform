@@ -34,3 +34,7 @@ Resend CLI login prompts locally for the API key. Production runtime SDK credent
 After authorization restart the Codex session to load registered tools. Verify read-only identity/list calls, dev-only Neon project access, Resend test diagnostics and aggregate-only PostHog queries; record redacted outcomes. Keep production Neon MCP access forbidden. CLI installation does not authorize billable resource creation.
 
 Official sources: https://developers.openai.com/codex/mcp ; https://fly.io/docs/flyctl/install/ ; https://neon.com/blog/just-landed-in-the-neon-cli ; https://github.com/resend/resend-cli
+
+## Authentication follow-up
+Neon CLI browser authentication completed with Windows keyring storage. Read-only project listing succeeded and returned an empty list. Resend MCP OAuth completed successfully. Fly and PostHog MCP show OAuth configured. Neon MCP failed token exchange with Invalid redirect URI; CLI remains available. Resend CLI login reproduced Missing --key flag in non-interactive mode, including a PTY attempt. Its separate API-key login remains pending; no API key is needed merely to preserve the successful MCP authorization. No resources or messages created. Restart Codex to load authenticated MCP tools; authenticated tool calls remain to be verified.
+

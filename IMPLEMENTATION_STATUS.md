@@ -29,3 +29,5 @@ Owner setup required: confirm license/legal terms and private security contact; 
 Final local increment verification: pnpm test passed 9 tests; pnpm catalog:validate passed 50 definitions; foundation agent executed pnpm build successfully and strict typechecks across all four packages. Next catalog preview and disabled worker scaffold exist. No browser E2E, live database, scheduler, auth, PostHog, Resend or deployment acceptance is claimed.
 
 Local tooling follow-up: installed Fly CLI 0.5.1, Neon CLI 8.15.1, Resend CLI 2.26.2; verified version commands. Registered five official MCP servers globally outside Git. OAuth remains pending; PostHog metadata discovery failed with a connection error. See docs/LOCAL_TOOLING_SETUP.md. No authenticated MCP calls or provisioning claimed.
+
+Auth follow-up: Neon CLI authenticated via keyring; read-only project list succeeded (empty). Resend MCP OAuth succeeded; Fly/PostHog OAuth configured. Neon MCP redirect URI failure unresolved; Resend CLI separate API-key login pending. No resource provisioning or sends.
