@@ -1,0 +1,1 @@
+{"name":"@labticker/analytics","version":"0.0.1","private":true,"type":"module","exports":"./src/index.ts","scripts":{"typecheck":"tsc --noEmit","test":"tsx --test test/*.test.ts","build":"tsc"},"dependencies":{"posthog-js":"1.444.0"},"devDependencies":{"tsx":"4.20.6"}}

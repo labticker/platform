@@ -12,3 +12,5 @@ test-results/
 *.key
 *.log
 .DS_Store
+.playwright-cli/
+output/playwright/
