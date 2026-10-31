@@ -1,0 +1,13 @@
+# Aggregate product reporting
+
+`materializeDaily(db, date, asOf)` is worker/server-only. It writes UTC date counts in a transaction. Recompute the recent 14 accepted-message cohort dates for late delivery events. Cohort activation/retention dates need recomputation after seven/thirty days mature; no automatic scheduler is claimed yet.
+
+`recordAccountState` in the database package records full authoritative post-mutation snapshots inside the account mutation transaction. Only cohorts with a `verified_signup` baseline exactly at verification are measured. Existing users without baseline are unmeasured rather than retroactively reconstructed. Activation means three simultaneous monitors within seven days; retention means consented, enabled and unsuppressed with a monitor at day30. State sequence breaks timestamp ties. Historical data must remain complete for valid results; deletion/anonymization policy and engaged retention remain launch gates.
+
+`readSummary` only selects `analytics_daily_aggregates`; it has no arbitrary SQL, table, account or recipient selector. Its API accepts dates (max92day span), allowlisted metric and bounded pagination only. Every count below10 is omitted, including global counts, so incomplete numerator/denominator pairs never produce rates. No raw personal data is returned. Reported opens are unreliable estimates; clicks can be scanners.
+
+`GET /api/admin/analytics/summary` requires a separate high-entropy `ANALYTICS_REPORT_TOKEN` of at least32characters. The bearer comparison is constant-time for equal lengths. Rate limits30authorized requests/minute in each process and logs only action/outcome; no authorization values, URLs or query text. Add edge/global limits before scaling beyond one web process. It returns no-store responses. Missing secret denies access; missing database returns503. Configure a read-only database role limited to aggregate SELECT for stronger runtime isolation before production.
+
+`/admin` separately requires a current authenticated admin role; it never accepts the service bearer as a user login. Shows last30UTCdays with suppressed counts, no individual subscriber histories. PostHog acquisition and engaged retention are unavailable until separately configured; no fictional zero values. Metrics do not declare PMF or activate advertising.
+
+Run `pnpm --filter @labticker/reporting test` for PGlite migration/materialization, maturity and historical-state tests, tracking flags, thresholding, HTTP authorization, query rejection and rate limits. Production Neon migrations, real provider metrics and owner reporting access remain unaccepted.
