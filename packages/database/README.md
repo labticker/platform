@@ -1,0 +1,11 @@
+# Database core
+
+Drizzle PostgreSQL schema and generated SQL live in `src/schema.ts` and root `drizzle/`. Generate changes with `pnpm --filter @labticker/database generate`; review SQL and test with `pnpm --filter @labticker/database test`. Tests apply real PostgreSQL migrations to isolated, in-memory PGlite instances without network access, cloud billing or subscriber data.
+
+This package does not automatically connect to Neon or apply production migrations. Inject a schema-aware Drizzle PostgreSQL database into repository functions. Production migration execution still requires protected Actions, a reviewed diff, development-branch testing and approved backup/rollback evidence. PGlite tests do not substitute for a Neon restore drill or concurrency/load checks.
+
+`upsertCatalogEntry` accepts already validated definitions and an immutable provider/external record identity. Retain `externalId` when renaming a slug. It preserves application IDs, subscriptions, releases and source history; retains the previous slug as an alias; refuses identity collisions; audits content hashes and Git commits; and never deletes entries absent from an import. Cross-provider identity linking and upstream/local field merge require a reviewed mapping before calling this single-record repository. Do not use display names as identity or overwrite maintained JSON with upstream data. Runtime source adapters remain responsible for URL validation and fetch-time DNS/redirect safety.
+
+Auth tables expose the Auth.js adapter property names; no authentication flow is activated by schema creation. Consent, delivery receipts, webhook dedupe and aggregate tables provide persistence contracts, not a completed scheduler or reporting pipeline. Live sends remain disabled, and no ad activation model is added.
+
+References: https://orm.drizzle.team/docs/sql-schema-declaration and https://orm.drizzle.team/docs/get-started/pglite-new . Stable package releases are pinned in package.json.
