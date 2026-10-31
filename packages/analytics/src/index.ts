@@ -11,6 +11,14 @@ export function safeEvent(event:string, path:string):{event:EventName;properties
   const route = safeRoute(path);
   return events.has(event) && route ? {event:event as EventName,properties:{route}} : null;
 }
+/** Preserve only the SDK envelope and public project routing token. Person updates,
+ * URL/referrer/device enrichment and caller-supplied tokens must never pass through.
+ */
+export function sanitizeTransportEvent(event:{uuid:string;event:string;properties:Record<string,unknown>;timestamp?:Date},publicProjectKey:string){
+  const clean=safeEvent(event.event,String(event.properties.route??''));
+  if(!clean||!publicProjectKey)return null;
+  return {uuid:event.uuid,event:clean.event,...(event.timestamp?{timestamp:event.timestamp}:{}),properties:{...clean.properties,token:publicProjectKey,distinct_id:'$posthog_cookieless',$process_person_profile:false}};
+}
 export interface Analytics { capture(event:EventName, path:string):void; }
 export const noopAnalytics: Analytics = Object.freeze({capture:()=>{}});
 export interface AnalyticsConfig { provider:'noop'|'posthog'; production:boolean; optedOut:boolean; doNotTrack:boolean; key?:string; host?:string; }
@@ -24,10 +32,7 @@ export async function createAnalytics(config:AnalyticsConfig):Promise<Analytics>
     disable_surveys:true,advanced_disable_feature_flags:true,disable_external_dependency_loading:true,
     before_send:(event)=> {
       if(!event) return null;
-      const sanitized = safeEvent(event.event,String(event.properties?.route??''));
-      if(!sanitized) return null;
-      // Drop SDK URL, referrer, device and identity enrichment. Only a coarse route is permitted.
-      return {...event,properties:{...sanitized.properties,distinct_id:'$posthog_cookieless',$process_person_profile:false}};
+      return sanitizeTransportEvent(event,config.key!);
     },
   });
   return {capture(event,path){const clean=safeEvent(event,path);if(clean) posthog.capture(clean.event,clean.properties);}};
