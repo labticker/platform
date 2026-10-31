@@ -10,7 +10,8 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "catalog:validate": "pnpm --filter @labticker/catalog validate",
-    "dev:fixture-db": "tsx scripts/local-database.ts"
+    "dev:fixture-db": "tsx scripts/local-database.ts",
+    "test:postgres": "tsx scripts/queue-postgres-acceptance.ts"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.13",

@@ -1,0 +1,15 @@
+.git
+**/node_modules
+**/.next
+**/dist
+**/.turbo
+.playwright-cli
+output
+**/.env
+**/.env.*
+!**/.env.example
+**/*.pem
+**/*.key
+**/*.log
+coverage
+test-results
