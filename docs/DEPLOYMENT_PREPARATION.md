@@ -1,3 +1,5 @@
+> Historical baseline: superseded for current rollout by [MVP_ROLLOUT.md](MVP_ROLLOUT.md) and [IMPLEMENTATION_STATUS.md](../IMPLEMENTATION_STATUS.md). Statements below describe earlier acceptance and are not current cloud status.
+
 # Deployment preparation — not executed
 
 The Docker image, Fly example config and manual Actions workflows are reviewable preparation.
