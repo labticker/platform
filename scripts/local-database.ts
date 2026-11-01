@@ -22,7 +22,10 @@ for(const slug of ['home-assistant','immich','jellyfin']){
  const [app]=await db.insert(schema.applications).values({slug,name:definition.name,description:definition.summary,category:definition.category,homepageUrl:definition.website,repoUrl:definition.repository?.url}).returning();
  if(!app)throw new Error('Fixture seed failed');
  for(const source of definition.releaseSources){
-  if(source.kind==='github-releases'&&source.repository)await db.insert(schema.releaseSources).values({applicationId:app.id,provider:source.kind,externalKey:source.repository,url:`https://api.github.com/repos/${source.repository}/releases`});
+  if(source.kind==='github-releases'&&source.repository){
+   const [feed]=await db.insert(schema.releaseSources).values({applicationId:app.id,provider:source.kind,externalKey:source.repository,url:`https://api.github.com/repos/${source.repository}/releases`,lastOkAt:new Date(),lastPolledAt:new Date()}).returning();
+   if(feed)await db.insert(schema.releases).values({applicationId:app.id,releaseSourceId:feed.id,dedupeKey:`local-fixture-${slug}`,tag:'fixture-v1',title:'Synthetic local acceptance release',releaseUrl:`https://github.com/${source.repository}/releases/tag/fixture-v1`,notesText:'Synthetic fixture notes. Migration required. This is not an upstream release.',publishedAt:new Date(Date.now()-86400000),firstSeenAt:new Date(Date.now()-86400000),isBackfill:true,warningFlags:[{label:'Migration mentioned',evidence:'Synthetic fixture: migration required',advisory:true}]});
+  }
  }
 }
 const server=new PGLiteSocketServer({db:client,host:'127.0.0.1',port,inspect:false,maxConnections:10});

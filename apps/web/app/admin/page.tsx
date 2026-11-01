@@ -1,12 +1,12 @@
 import {getCurrentUser} from '../../lib/auth';
-import {getDatabase} from '@labticker/database/runtime';
+import {getReportingDatabase} from '@labticker/database/runtime';
 import {readOwnerSummary} from '@labticker/reporting/reader';
 import {redirect} from 'next/navigation';
 export const dynamic='force-dynamic';
 export default async function Admin(){
  const user=await getCurrentUser();if(!user)redirect('/auth/sign-in');if(user.role!=='admin')return <main><h1>Access denied</h1></main>;
- const to=new Date(Date.now()-86400000).toISOString().slice(0,10),from=new Date(Date.parse(to)-89*86400000).toISOString().slice(0,10);
- const report=await readOwnerSummary(getDatabase(),from,to);
+ const to=new Date(Date.now()-86400000).toISOString().slice(0,10),from=new Date(Date.parse(to)-104*86400000).toISOString().slice(0,10);
+ const report=await readOwnerSummary(getReportingDatabase(),from,to);
  return <main><h1>LabTicker product metrics</h1><p>Complete UTC dates through {to}. Owner-only aggregate counts may include small cells; the separate AI/service report suppresses them. Missing dates are unavailable, never zero.</p>
  <p>Activation and retention rates compare cohorts whose seven/thirty-day maturity dates fall in each rolling period. Their signup-date windows are shifted back seven/thirty days and shown per metric; new immature signups are excluded. Pre-instrumentation cohorts are unmeasured. Metrics cannot declare product-market fit or enable advertising.</p>
  <p>Reported opens are unreliable estimates due to Apple MPP/proxies. Clicks may include scanners. Rates below require complete paired cohorts and a denominator of at least ten.</p>
@@ -14,5 +14,5 @@ export default async function Admin(){
  <table><thead><tr><th>Metric</th><th>Current</th><th>Previous</th><th>Change</th></tr></thead><tbody>{window.current.rates.map(rate=>{const previous=window.previous.rates.find(value=>value.name===rate.name),comparison=window.comparisons.find(value=>value.name===rate.name);return <tr key={rate.name}><td>{rate.name}<p>{rate.description}</p></td><td>{rate.available?`${(rate.value*100).toFixed(1)}%`:'Unavailable'}<p>Metric/cohort dates: {rate.cohortFrom} to {rate.cohortTo}</p>{rate.available&&<p>{rate.numeratorCount} / {rate.denominatorCount}</p>}{rate.asOf&&<p>Computed: {rate.asOf.from} to {rate.asOf.to}</p>}</td><td>{previous?.available?`${(previous.value*100).toFixed(1)}%`:'Unavailable'}{previous&&<p>Metric/cohort dates: {previous.cohortFrom} to {previous.cohortTo}</p>}{previous?.available&&<p>{previous.numeratorCount} / {previous.denominatorCount}</p>}{previous?.asOf&&<p>Computed: {previous.asOf.from} to {previous.asOf.to}</p>}</td><td>{comparison?.available?`${comparison.percentagePointChange.toFixed(1)} percentage points`:'Unavailable'}</td></tr>;})}</tbody></table>
  <details><summary>Aggregate counts and denominators</summary><table><thead><tr><th>Metric</th><th>Current</th><th>Previous</th></tr></thead><tbody>{Object.entries(window.current.counts).map(([name,value])=>{const prior=window.previous.counts[name];return <tr key={name}><td>{name}</td><td>{value.available?value.value:'Unavailable'}</td><td>{prior?.available?prior.value:'Unavailable'}</td></tr>;})}</tbody></table></details></>:<p>Not enough complete report dates.</p>}</section>)}
  <p>Source health shows the latest observed snapshot in each period: fresh means successful within four hours. It is not a sum or reconstructed history. Multiday unsubscribe rates use observed at-risk account-days; generic historical suppressions remain unclassified.</p>
- <p>Acquisition visits require PostHog; engaged retention requires separately disclosed engagement history. No browser-to-account identity matching occurs.</p><nav><a href="/admin/sources">Source operations</a> · <a href="/admin/operations">Worker operations</a></nav></main>;
+ <p>Traffic counts come from aggregate-only PostHog queries. Visitors are estimated daily observations; multiday sums are not distinct people. Conversion is directional and can be unavailable when tracking and signup denominators do not align. Engaged retention uses authenticated dashboard sign-ins or visits during days 23–37 and separately disclosed engagement history. No browser-to-account identity matching occurs.</p><nav><a href="/admin/sources">Source operations</a> · <a href="/admin/operations">Worker operations</a></nav></main>;
 }
