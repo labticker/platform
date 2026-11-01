@@ -50,6 +50,20 @@
       "when": 1793457221539,
       "tag": "0006_noisy_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793493229282,
+      "tag": "0007_elite_edwin_jarvis",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793553391583,
+      "tag": "0008_rapid_falcon",
+      "breakpoints": true
     }
   ]
 }

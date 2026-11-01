@@ -41,9 +41,9 @@ async page => {
  await waitFor(()=>events.some(e=>e.event==='$pageview'&&e.properties.route==='/privacy'));
  for(const event of events){
   if(!['$pageview','catalog_search_used','catalog_filter_used'].includes(event.event))throw new Error('Unexpected automatic event');
-  const allowed=['route','token','distinct_id','$process_person_profile',...(event.event==='$pageview'&&event.properties.route==='/'?['acquisition']:[])];
+  const allowed=['route','token','distinct_id','$process_person_profile','$geoip_disable',...(event.event==='$pageview'&&event.properties.route==='/'?['acquisition']:[])];
   if(Object.keys(event.properties??{}).some(k=>!allowed.includes(k)))throw new Error('Unexpected identifying SDK enrichment');
-  if(event.properties.distinct_id!=='$posthog_cookieless'||event.properties.$process_person_profile!==false)throw new Error('Person processing enabled');
+  if(event.properties.distinct_id!=='$posthog_cookieless'||(event.properties.$process_person_profile!==false||event.properties.$geoip_disable!==true))throw new Error('Person processing enabled');
   if(event.$set||event.$set_once||/fixture-private|fixture@example\.invalid|utm_campaign/.test(JSON.stringify(event)))throw new Error('Private event data escaped sanitizer');
  }
  const beforeOptout=requests.length;

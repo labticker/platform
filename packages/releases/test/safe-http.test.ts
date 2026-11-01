@@ -31,6 +31,14 @@ test('DNS validation checks every answer and fails before transport on private r
   const mismatch = new SafeHttpClient({ allowedHosts: ['api.github.com'] }, dependencies(async () => reply(), async () => [{ address: '140.82.112.5', family: 6 }]));
   await assert.rejects(mismatch.get('https://api.github.com'), /non-public/);
 });
+test('CI release credential never permits a second host or cross-host redirect',async()=>{
+ let captured:PinnedRequest|undefined;
+ const client=new SafeHttpClient({allowedHosts:['api.github.com'],githubToken:'fixture_CI_token'},dependencies(async request=>{captured=request;return reply({status:302,headers:{location:'https://example.com/private'}});}));
+ await assert.rejects(client.get('https://api.github.com/repos/fixture/project/releases'),/not approved/);
+ assert.equal(captured?.headers.authorization,'Bearer fixture_CI_token');
+ await assert.rejects(new SafeHttpClient({allowedHosts:['api.github.com','example.com'],githubToken:'fixture_CI_token'}).get('https://api.github.com'),/credential policy/);
+ await assert.rejects(new SafeHttpClient({allowedHosts:['api.github.com'],githubToken:'private\r\ninjected'}).get('https://api.github.com'),/credential policy/);
+});
 
 test('validated DNS answer is passed to pinned transport and conditional requests are bounded', async () => {
   let captured: PinnedRequest | undefined;

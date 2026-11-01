@@ -28,9 +28,9 @@ async page => {
  for(const event of batches){
   if(event.event!=='$pageview')throw new Error('Unapproved event escaped sanitizer');
   const keys=Object.keys(event.properties).sort().join(',');
-  if(keys!==['$process_person_profile','acquisition','distinct_id','route','token'].sort().join(','))throw new Error('Unexpected identifying SDK enrichment');
+  if(keys!==['$process_person_profile','$geoip_disable','acquisition','distinct_id','route','token'].sort().join(','))throw new Error('Unexpected identifying SDK enrichment');
   if(event.properties.acquisition!=='community')throw new Error('Coarse acquisition category was not retained');
-  if(event.properties.route!=='/apps/[slug]'||event.properties.token!=='phc_local_fixture_not_a_real_project'||event.properties.distinct_id!=='$posthog_cookieless'||event.properties.$process_person_profile!==false)throw new Error('Incorrect cookieless capture envelope');
+  if(event.properties.route!=='/apps/[slug]'||event.properties.token!=='phc_local_fixture_not_a_real_project'||event.properties.distinct_id!=='$posthog_cookieless'||(event.properties.$process_person_profile!==false||event.properties.$geoip_disable!==true))throw new Error('Incorrect cookieless capture envelope');
   if(event.$set||event.$set_once||JSON.stringify(event).includes('fixture-private')||JSON.stringify(event).includes('fixture@example.invalid'))throw new Error('Private data escaped sanitizer');
  }
  if(requests.some(r=>!/posthog\.com$/.test(new URL(r.url).hostname)||/\/s\/|record|replay|adsense|carbon/i.test(r.url)))throw new Error('Replay, advertising or unrelated vendor request attempted');

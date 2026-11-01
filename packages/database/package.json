@@ -10,7 +10,9 @@
     "./accounts": "./src/accounts.ts",
     "./auth-policy": "./src/auth-policy.ts",
     "./source-admin": "./src/source-admin.ts",
-    "./operations": "./src/operations.ts"
+    "./operations": "./src/operations.ts",
+    "./public-catalog": "./src/public-catalog.ts",
+    "./digests": "./src/digests.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
