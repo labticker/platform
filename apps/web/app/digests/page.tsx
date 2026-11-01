@@ -1,10 +1,11 @@
+import {ReleaseMarkdown} from '../release-markdown';
 import {SiteHeader,SiteFooter} from '../site-chrome';
 import {redirect} from 'next/navigation';
 import {getCurrentUser} from '../../lib/auth';
 import {getDatabase} from '@labticker/database/runtime';
 import {readUserDigests,type DigestPreviewRelease} from '@labticker/database/digests';
 export const dynamic='force-dynamic';
-function Release({release}:{release:DigestPreviewRelease}){return <article className="release-card"><h3>{release.appName} <span className="badge">{release.version}</span></h3><p>{release.title}</p>{release.publishedAt&&<p className="muted">Published {new Date(release.publishedAt).toLocaleDateString('en-CA',{timeZone:'UTC'})}</p>}{release.warnings.map((warning,index)=><p key={index} className="notice">{warning} — advisory only</p>)}<p>{release.notes}</p>{release.url&&<a href={release.url} rel="noreferrer">Read the official release notes ↗</a>}</article>;}
+function Release({release}:{release:DigestPreviewRelease}){return <article className="release-card"><h3>{release.appName} <span className="badge">{release.version}</span></h3><p>{release.title}</p>{release.publishedAt&&<p className="muted">Published {new Date(release.publishedAt).toLocaleDateString('en-CA',{timeZone:'UTC'})}</p>}{release.warnings.map((warning,index)=><p key={index} className="notice">{warning} — advisory only</p>)}<ReleaseMarkdown notes={release.notes} sourceUrl={release.url??undefined}/>{release.url&&<a href={release.url} rel="noreferrer">Read the official release notes ↗</a>}</article>;}
 export default async function Digests({searchParams}:{searchParams:Promise<{view?:string}>}){
  const user=await getCurrentUser();if(!user)redirect('/auth/sign-in');
  const view=(await searchParams).view==='sample'?'sample':'upcoming';

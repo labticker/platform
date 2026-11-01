@@ -47,5 +47,24 @@ test('account repository authorizes monitors, records consent/state and preserve
  }finally{await client.close();}
 });
 
+test('release projections use publication chronology, missing-date fallback and stable ties',async()=>{
 
-
+ const client=new PGlite(),db=drizzle(client,{schema});try{
+  await migrate(db,{migrationsFolder:'../../drizzle'});
+  const now=new Date('2026-03-01'),enabledAt=new Date('2026-01-01');
+  const [user]=await db.insert(schema.users).values({email:'chronology@example.com',emailVerified:enabledAt}).returning();assert.ok(user);
+  const [app]=await db.insert(schema.applications).values({slug:'chronology',name:'Chronology',description:'Chronology fixture',category:'monitoring',homepageUrl:'https://example.com'}).returning();assert.ok(app);
+  const [source]=await db.insert(schema.releaseSources).values({applicationId:app.id,provider:'github-releases',externalKey:'fixture/chronology',url:'https://api.github.com/repos/fixture/chronology/releases'}).returning();assert.ok(source);
+  await db.insert(schema.subscriptions).values({userId:user.id,applicationId:app.id,enabledAt});
+  const rows=[
+   {title:'Older published, imported last',publishedAt:new Date('2026-01-10'),firstSeenAt:new Date('2026-02-28')},
+   {title:'Publication missing',publishedAt:null,firstSeenAt:new Date('2026-02-10')},
+   {title:'Same publication, older import',publishedAt:new Date('2026-02-20'),firstSeenAt:new Date('2026-02-21')},
+   {title:'Latest tie A',publishedAt:new Date('2026-02-20'),firstSeenAt:new Date('2026-02-22')},
+   {title:'Latest tie B',publishedAt:new Date('2026-02-20'),firstSeenAt:new Date('2026-02-22')},
+  ];
+  await db.insert(schema.releases).values(rows.map((row,index)=>({...row,id:`00000000-0000-4000-8000-${String(index+1).padStart(12,'0')}`,applicationId:app.id,releaseSourceId:source.id,dedupeKey:row.title,releaseUrl:'https://example.com/release',notesText:'Fixture notes',isBackfill:false})));
+  const expected=['Latest tie A','Latest tie B','Same publication, older import','Publication missing','Older published, imported last'];
+  assert.deepEqual((await accountDashboard(db,user.id)).recent.map(release=>release.title),expected);
+ }finally{await client.close();}
+});

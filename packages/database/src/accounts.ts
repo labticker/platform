@@ -1,4 +1,4 @@
-import {and,eq,isNull,inArray,desc,sql} from 'drizzle-orm';
+import {and,eq,isNull,inArray,desc,asc,sql} from 'drizzle-orm';
 import type {PgDatabase,PgQueryResultHKT} from 'drizzle-orm/pg-core';
 import * as s from './schema.js';
 import {recordAccountState} from './history.js';
@@ -10,7 +10,7 @@ export async function accountDashboard(db:Database,userId:string){
  const monitors=await db.select().from(s.subscriptions).where(eq(s.subscriptions.userId,userId));
  const [preferences]=await db.select().from(s.preferences).where(eq(s.preferences.userId,userId));
  const [consent]=await db.select({id:s.emailConsents.id}).from(s.emailConsents).where(and(eq(s.emailConsents.userId,userId),eq(s.emailConsents.consentType,'digest'),isNull(s.emailConsents.withdrawnAt)));
- const recent=await db.select({title:s.releases.title,tag:s.releases.tag,url:s.releases.releaseUrl,appName:s.applications.name,slug:s.applications.slug,notes:sql<string>`left(${s.releases.notesText},600)`,publishedAt:s.releases.publishedAt,firstSeenAt:s.releases.firstSeenAt,backfill:s.releases.isBackfill,warnings:s.releases.warningFlags}).from(s.releases).innerJoin(s.applications,eq(s.applications.id,s.releases.applicationId)).innerJoin(s.subscriptions,and(eq(s.subscriptions.applicationId,s.releases.applicationId),eq(s.subscriptions.userId,userId),eq(s.subscriptions.active,true))).where(eq(s.applications.hidden,false)).orderBy(desc(s.releases.firstSeenAt)).limit(25);
+ const recent=await db.select({title:s.releases.title,tag:s.releases.tag,url:s.releases.releaseUrl,appName:s.applications.name,slug:s.applications.slug,notes:sql<string>`left(${s.releases.notesText},600)`,publishedAt:s.releases.publishedAt,firstSeenAt:s.releases.firstSeenAt,backfill:s.releases.isBackfill,warnings:s.releases.warningFlags}).from(s.releases).innerJoin(s.applications,eq(s.applications.id,s.releases.applicationId)).innerJoin(s.subscriptions,and(eq(s.subscriptions.applicationId,s.releases.applicationId),eq(s.subscriptions.userId,userId),eq(s.subscriptions.active,true))).where(eq(s.applications.hidden,false)).orderBy(desc(sql`coalesce(${s.releases.publishedAt},${s.releases.firstSeenAt})`),desc(s.releases.firstSeenAt),asc(s.releases.id)).limit(25);
  return {apps,monitors,preferences,recent,consented:!!consent,suppressed:!!user.suppressedAt};
 }
 export async function setMonitor(db:Database,userId:string,applicationId:string,active:boolean,now=new Date()){
