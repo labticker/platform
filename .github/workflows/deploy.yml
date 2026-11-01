@@ -1,16 +1,51 @@
-name: Approved Fly preview deployment
+name: Approved LabTicker monitoring MVP rollout
 on:
   workflow_dispatch:
     inputs:
       app:
-        description: Actual approved Fly app slug (no assumed ownership)
+        description: Actual assigned Fly app slug
+        required: true
+        default: labticker
+      rollout_stage:
+        description: Private owner acceptance never opens public registration; public pilot requires analytics
+        type: choice
+        options: [owner-acceptance, public-pilot]
+        default: owner-acceptance
+      approval_reference:
+        description: Owner approval for migration, scoped roles/secrets and one web plus one worker
         required: true
       backup_reference:
-        description: Reviewed Neon backup/restore evidence reference
+        description: Reviewed backup/restore evidence reference
         required: true
-      approval_reference:
-        description: Owner approval for deployment and reviewed migrations
-        required: true
+      backup_branch_id:
+        description: Fresh main data-clone branch ID (leave empty only when creating an approved backup)
+      create_backup:
+        description: Explicit approval to create a no-compute Neon backup branch within quota
+        type: boolean
+        default: false
+      bootstrap_runtime_roles:
+        description: First scoped-role creation and Fly credential staging (refuses existing roles)
+        type: boolean
+        default: false
+      analytics_enabled:
+        description: Approved cookieless PostHog project and privacy configuration ready
+        type: boolean
+        default: false
+      bootstrap_catalog:
+        description: Idempotently sync registry and seed available baseline release history
+        type: boolean
+        default: true
+      email_delivery_mode:
+        description: Keep mock unless a verified-sender rollout is separately approved
+        type: choice
+        options: [mock, resend]
+        default: mock
+      live_email_approval_reference:
+        description: Must match the owner decision in the verified sender approval document
+      email_auth_enabled:
+        description: Optional verified-sender magic links; GitHub OAuth remains available
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -21,7 +56,15 @@ jobs:
     if: github.ref == 'refs/heads/main'
     environment: production
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
+    services:
+      role-postgres:
+        image: postgres:17@sha256:31ba9c94a03ada9988f2bb493a22a75eef3a185884533e5cdbcd498ea835b08f
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 55435:5432
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 12
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa
@@ -33,34 +76,116 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck && pnpm test && pnpm catalog:validate && pnpm build
-      - name: Validate reviewed deployment inputs
+      - name: Verify runtime role policy on disposable PostgreSQL
+        env:
+          LOCAL_DB_FIXTURE_ENABLED: 'true'
+        run: pnpm exec tsx scripts/role-postgres-acceptance.ts
+      - name: Validate approved pilot configuration
         env:
           ACTUAL_APP: ${{ inputs.app }}
-          BACKUP_REFERENCE: ${{ inputs.backup_reference }}
           APPROVAL_REFERENCE: ${{ inputs.approval_reference }}
+          BACKUP_REFERENCE: ${{ inputs.backup_reference }}
+          ANALYTICS_ENABLED: ${{ inputs.analytics_enabled }}
+          POSTHOG_KEY: ${{ vars.NEXT_PUBLIC_POSTHOG_KEY }}
+          POSTHOG_HOST: ${{ vars.NEXT_PUBLIC_POSTHOG_HOST }}
+          POSTHOG_PROJECT: ${{ vars.POSTHOG_PROJECT_ID }}
+          POSTHOG_QUERY_KEY: ${{ secrets.POSTHOG_QUERY_API_KEY }}
+          MEASUREMENT_START: ${{ vars.POSTHOG_MEASUREMENT_START_DATE }}
+          EMAIL_DELIVERY_MODE: ${{ inputs.email_delivery_mode }}
+          EMAIL_AUTH_ENABLED: ${{ inputs.email_auth_enabled }}
+          LIVE_EMAIL_APPROVAL_REFERENCE: ${{ inputs.live_email_approval_reference }}
+          EMAIL_ROLLOUT_APPROVAL_JSON: ${{ secrets.EMAIL_ROLLOUT_APPROVAL_JSON }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          SENDER_IDENTITY: ${{ vars.SENDER_IDENTITY }}
+          SENDER_CONTACT: ${{ vars.SENDER_CONTACT }}
+          ROLLOUT_STAGE: ${{ inputs.rollout_stage }}
         run: |
           [[ "$ACTUAL_APP" =~ ^[a-z][a-z0-9-]{2,50}$ ]] || exit 1
-          test -n "$BACKUP_REFERENCE" && test -n "$APPROVAL_REFERENCE"
-          sed "s/REPLACE_WITH_ASSIGNED_APP/$ACTUAL_APP/g" fly.example.toml > fly.toml
+          test -n "$APPROVAL_REFERENCE" && test -n "$BACKUP_REFERENCE"
+          if [[ "$ROLLOUT_STAGE" == public-pilot && ( "$ANALYTICS_ENABLED" != true || -z "$POSTHOG_KEY" ) ]]; then
+            echo 'MVP pilot requires explicitly configured cookieless acquisition analytics; use preview workflow until ready.' >&2
+            exit 1
+          fi
+          pnpm exec tsx scripts/configure-pilot.ts
       - name: Install pinned Fly CLI
         run: |
           curl -fsSL https://github.com/superfly/flyctl/releases/download/v0.5.1/flyctl_0.5.1_Linux_x86_64.tar.gz -o /tmp/flyctl.tar.gz
           tar -xzf /tmp/flyctl.tar.gz -C /tmp flyctl
           sudo install /tmp/flyctl /usr/local/bin/flyctl
           flyctl version
+      - name: Verify fresh backup clone and production target before migration
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
+          NEON_MAIN_BRANCH_ID: ${{ vars.NEON_MAIN_BRANCH_ID }}
+          NEON_BACKUP_BRANCH_ID: ${{ inputs.backup_branch_id }}
+          NEON_BACKUP_CREATE: ${{ inputs.create_backup }}
+          BACKUP_CREATION_APPROVED: ${{ inputs.create_backup }}
+          MIGRATION_DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}
+          BACKUP_ATTESTATION_PATH: ${{ runner.temp }}/backup-attestation.json
+        run: pnpm exec tsx scripts/neon-production-backup.ts
       - name: Apply approved migrations
         env:
           DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}
           MIGRATION_APPROVED: 'true'
+          MIGRATION_TARGET: production
+          NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
+          NEON_MAIN_BRANCH_ID: ${{ vars.NEON_MAIN_BRANCH_ID }}
+          BACKUP_ATTESTATION_PATH: ${{ runner.temp }}/backup-attestation.json
         run: pnpm exec tsx scripts/migrate.ts
-      - name: Deploy web preview only
+      - name: Apply scoped runtime roles and stage initial DSNs through stdin
+        env:
+          MIGRATION_DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}
+          RUNTIME_ROLES_APPROVED: 'true'
+          RUNTIME_ROLES_BOOTSTRAP: ${{ inputs.bootstrap_runtime_roles }}
+          FLY_APP: ${{ inputs.app }}
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: pnpm exec tsx scripts/provision-runtime-roles.ts
+      - name: Stage approved OAuth and initial operational secrets through stdin
+        env:
+          PILOT_SECRETS_APPROVED: 'true'
+          RUNTIME_ROLES_BOOTSTRAP: ${{ inputs.bootstrap_runtime_roles }}
+          FLY_APP: ${{ inputs.app }}
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          AUTH_GITHUB_ID: ${{ secrets.AUTH_GITHUB_ID }}
+          AUTH_GITHUB_SECRET: ${{ secrets.AUTH_GITHUB_SECRET }}
+          UNSUBSCRIBE_SECRET: ${{ secrets.UNSUBSCRIBE_SECRET }}
+          ANALYTICS_REPORT_TOKEN: ${{ secrets.ANALYTICS_REPORT_TOKEN }}
+          POSTHOG_QUERY_API_KEY: ${{ secrets.POSTHOG_QUERY_API_KEY }}
+          EMAIL_DELIVERY_MODE: ${{ inputs.email_delivery_mode }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          EMAIL_ROLLOUT_APPROVAL_JSON: ${{ secrets.EMAIL_ROLLOUT_APPROVAL_JSON }}
+          RESEND_WEBHOOK_SECRET: ${{ secrets.RESEND_WEBHOOK_SECRET }}
+        run: pnpm exec tsx scripts/stage-pilot-secrets.ts
+      - name: Bootstrap reviewed catalog and release history before first pilot
+        if: inputs.bootstrap_catalog
+        env:
+          DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}
+          CATALOG_BOOTSTRAP_APPROVED: 'true'
+          CATALOG_GIT_SHA: ${{ github.sha }}
+          GITHUB_RELEASE_BOOTSTRAP_TOKEN: ${{ github.token }}
+        run: pnpm exec tsx scripts/bootstrap-catalog.ts
+      - name: Deploy the same SHA image to web and worker
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-        run: flyctl deploy --config fly.toml --process-groups web --remote-only --build-arg CATALOG_GIT_SHA="$GITHUB_SHA" --image-label "$GITHUB_SHA" --ha=false
-      - name: Smoke web preview
+          POSTHOG_KEY: ${{ vars.NEXT_PUBLIC_POSTHOG_KEY }}
+          POSTHOG_HOST: ${{ vars.NEXT_PUBLIC_POSTHOG_HOST }}
+          ANALYTICS_PROVIDER: ${{ inputs.rollout_stage == 'public-pilot' && 'posthog' || 'noop' }}
+        run: flyctl deploy --config fly.toml --process-groups web,worker --remote-only --build-arg CATALOG_GIT_SHA="$GITHUB_SHA" --build-arg ANALYTICS_PROVIDER="$ANALYTICS_PROVIDER" --build-arg NEXT_PUBLIC_POSTHOG_KEY="$POSTHOG_KEY" --build-arg NEXT_PUBLIC_POSTHOG_HOST="$POSTHOG_HOST" --image-label "$GITHUB_SHA" --ha=false
+      - name: Enforce approved process counts
         env:
-          ACTUAL_APP: ${{ inputs.app }}
-        run: |
-          curl --fail --retry 6 --retry-delay 5 "https://$ACTUAL_APP.fly.dev/api/health" -o /tmp/health.json
-          node -e 'const h=require("/tmp/health.json");if(h.service!=="LabTicker"||h.emailDeliveryMode!=="mock")process.exit(1)'
-          echo 'Worker remains disabled until its independent acceptance gate passes.' >> "$GITHUB_STEP_SUMMARY"
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          FLY_APP: ${{ inputs.app }}
+        run: flyctl scale count web=1 worker=1 --app "$FLY_APP" --yes
+      - name: Verify actual OAuth/DB/worker/analytics pilot readiness
+        env:
+          FLY_APP: ${{ inputs.app }}
+          EMAIL_DELIVERY_MODE: ${{ inputs.email_delivery_mode }}
+          ROLLOUT_STAGE: ${{ inputs.rollout_stage }}
+        run: pnpm exec tsx scripts/smoke-pilot.ts
+      - name: Record deployment identity
+        env:
+          FLY_APP: ${{ inputs.app }}
+          EMAIL_MODE: ${{ inputs.email_delivery_mode }}
+        run: echo "Monitoring pilot at https://$FLY_APP.fly.dev; image SHA $GITHUB_SHA; email mode $EMAIL_MODE. OAuth owner round-trip remains a manual smoke. Advertising stays off." >> "$GITHUB_STEP_SUMMARY"

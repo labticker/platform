@@ -12,4 +12,3 @@ async page => {
  if(requests.length)throw new Error('Unexpected third-party requests');
  console.log(JSON.stringify({accepted:true,ownerOnly:true,nonrootImage:true,thirdPartyRequests:requests.length,privateDigest401:true,report401:true,mockInbox404:true,onlyGithubProvider:true}));
 }
-
