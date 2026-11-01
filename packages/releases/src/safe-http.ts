@@ -111,7 +111,9 @@ export class SafeHttpClient {
     const timeoutMs = this.policy.timeoutMs ?? 10_000;
     const maxBytes = this.policy.maxBytes ?? 2_097_152;
     const maxRedirects = this.policy.maxRedirects ?? 3;
-    if(this.policy.githubToken&&(!/^[A-Za-z0-9_]+$/.test(this.policy.githubToken)||this.policy.githubToken.length>1024||this.policy.allowedHosts.length!==1||this.policy.allowedHosts[0]!=='api.github.com'))throw new Error('Invalid GitHub credential policy');
+    // GitHub installation credentials are opaque, including the newer JWT format.
+    // Validate transport safety, never token internals or a particular prefix.
+    if(this.policy.githubToken&&(/[^\x21-\x7e]/.test(this.policy.githubToken)||this.policy.githubToken.length>4096||this.policy.allowedHosts.length!==1||this.policy.allowedHosts[0]!=='api.github.com'))throw new Error('Invalid GitHub credential policy');
     if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 60_000 ||
         !Number.isInteger(maxBytes) || maxBytes < 1 || maxBytes > 8_388_608 ||
         !Number.isInteger(maxRedirects) || maxRedirects < 0 || maxRedirects > 5) {
