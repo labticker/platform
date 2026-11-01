@@ -5,10 +5,10 @@ GITHUB_OAUTH_ENABLED must explicitly be true alongside AUTH_GITHUB_ID, AUTH_GITH
 DATABASE_URL and a random AUTH_SECRET of at least 32 characters. APP_URL and AUTH_URL must match
 the exact assigned HTTPS Fly origin. Credentials alone leave enrollment disabled.
 
-Register an OAuth application in the labticker GitHub organization once the app hostname is assigned:
+Register an OAuth application in the labticker GitHub organization using the assigned app hostname:
 
-- Homepage: https://ACTUAL_APP.fly.dev
-- Callback: https://ACTUAL_APP.fly.dev/api/auth/callback/github
+- Homepage: https://labticker.fly.dev
+- Callback: https://labticker.fly.dev/api/auth/callback/github
 - Name: LabTicker pilot
 
 Store secrets directly in protected GitHub environment/Fly secrets, never in chat or tracked files.
