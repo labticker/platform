@@ -40,6 +40,14 @@ test('CI release credential never permits a second host or cross-host redirect',
  await assert.rejects(new SafeHttpClient({allowedHosts:['api.github.com'],githubToken:'private\r\ninjected'}).get('https://api.github.com'),/credential policy/);
 });
 
+test('opaque Actions JWT credentials support punctuation without permitting header injection',async()=>{
+ const token='ghs_123_fixture-header.fixture_payload.fixture-signature';
+ let authorization:string|undefined;
+ const client=new SafeHttpClient({allowedHosts:['api.github.com'],githubToken:token},dependencies(async request=>{authorization=request.headers.authorization;return reply();}));
+ await client.get('https://api.github.com/repos/fixture/project/releases');assert.equal(authorization,`Bearer ${token}`);
+ for(const unsafe of ['has space','tab\tvalue','line\nvalue','x'.repeat(4097)])await assert.rejects(new SafeHttpClient({allowedHosts:['api.github.com'],githubToken:unsafe}).get('https://api.github.com'),/credential policy/);
+});
+
 test('validated DNS answer is passed to pinned transport and conditional requests are bounded', async () => {
   let captured: PinnedRequest | undefined;
   const client = new SafeHttpClient({ allowedHosts: ['api.github.com'] }, dependencies(async (request) => { captured = request; return reply(); }));

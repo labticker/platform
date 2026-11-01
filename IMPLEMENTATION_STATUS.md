@@ -1,6 +1,6 @@
 # Implementation status
 
-Updated 2026-11-01. Full MVP code is under review in PR #1. The live site at https://labticker.fly.dev remains the catalog preview from 61c8d56. No phase is declared complete without its remaining external acceptance. The next rollout is private owner acceptance, with saved monitors and a real background worker but simulated email; it is not a public pilot or beta.
+Updated 2026-11-01. MVP PR #1 merged at e7b765f after green CI and an explicitly authorized one-time owner admin merge. The live site at https://labticker.fly.dev remains the catalog preview from 61c8d56. No phase is declared complete without its remaining external acceptance. The next rollout is private owner acceptance, with saved monitors and a real background worker but simulated email; it is not a public pilot or beta.
 
 | Phase | Implemented and tested | Remaining acceptance |
 |---|---|---|
@@ -14,7 +14,7 @@ Updated 2026-11-01. Full MVP code is under review in PR #1. The live site at htt
 
 ## Current validation
 
-94 automated tests pass: catalog 5, database 11, releases 15, notifications 19, analytics 6, reporting 11, telemetry 3, worker 16, web 8. All nine package typechecks, eight build scripts and all 50 catalog definitions pass. Fresh disposable PostgreSQL 17 acceptance passes concurrent preparation/dispatch, receipt dedupe and locked-user skipping. A separate three-role fixture exercises real catalog, authentication, monitor, preference, mock digest, source-control, retention and deletion paths, proves aggregate SQL read-only access/raw-table denial, and reapplies grants idempotently.
+The accepted full suite has 94 tests; the follow-up Actions-token regression adds one passing focused test (95 pending full CI): catalog 5, database 11, releases 16, notifications 19, analytics 6, reporting 11, telemetry 3, worker 16, web 8. All nine package typechecks, eight build scripts and all 50 catalog definitions pass. Fresh disposable PostgreSQL 17 acceptance passes concurrent preparation/dispatch, receipt dedupe and locked-user skipping. A separate three-role fixture exercises real catalog, authentication, monitor, preference, mock digest, source-control, retention and deletion paths, proves aggregate SQL read-only access/raw-table denial, and reapplies grants idempotently.
 
 Neon development has migrations 0000–0008, all 50 sources successfully polled and 5,336 retained real releases. The production worker image completed an actual development tick with 50 registry entries, 105 report dates and no failed sources/digests. Development temporary runtime-role checks passed and removed their test roles. No production subscriber queries or migrations were used for this evidence. The earlier restore-check branch proves a seven-migration schema clone only; it is not current production recovery proof.
 
@@ -30,9 +30,9 @@ Web, worker and reporting use separate SQL roles. The aggregate role sees only p
 
 ## External state and gates
 
-Owner approved the public organization/licenses and Fly personal organization William with a US$15/month planning budget for one web and one worker plus usage-based traffic/build charges, without domain purchases or paid Neon upgrades. Existing owner-approved preview run 41256323591 serves one 512 MB web Machine. No worker is deployed yet. Public protected PR #1 must be reviewed/merged; production remains protected by an explicit approval click. Single-owner environment self-approval is authorized; branch review protection has not been silently bypassed.
+Owner approved the public organization/licenses and Fly personal organization William with a US$15/month planning budget for one web and one worker plus usage-based traffic/build charges, without domain purchases or paid Neon upgrades. Existing owner-approved preview run 41256323591 serves one 512 MB web Machine. No worker is deployed yet. PR #1 was merged only after explicit owner authorization; production remains protected by an explicit approval click. Single-owner environment self-approval is authorized; branch review protection has not been silently bypassed.
 
-GitHub OAuth values, auth/session secret, app-scoped expiring Fly token, migration DSN, project-scoped Neon key and aggregate-report token are in protected production secrets. Neon Free main remains application-schema unmigrated. New backup branches require explicit protected workflow approval and quota verification. Production migrations never use Neon MCP.
+GitHub OAuth values, auth/session secret, app-scoped expiring Fly token, migration DSN, project-scoped Neon key and aggregate-report token are in protected production secrets. The owner-approved production run 41336535081 created ready backup clone br-snowy-bird-b5te6g01, applied migrations 0000–0008 and created/staged scoped SQL roles. It stopped at catalog seeding (50 polls failed, zero sources ready), before any app deployment or worker creation. The public preview is unchanged. The bootstrap validator rejects punctuation in the current GitHub installation-token format; a regression fix and pre-migration Actions preflight are under review. New backup branches require explicit protected workflow approval and quota verification. Production migrations never use Neon MCP.
 
 Official PostHog MCP is currently blocked by workstation DNS filtering that returns null addresses. Owner allowlisting or a narrow explicit exception is pending; filtering is not bypassed. Real PostHog project/private read-only query credentials and ingestion acceptance are still needed before public enrollment. Owner sender identity/contact and explicit live-email approval are pending, as are Resend application/webhook secrets. Existing verified domains do not by themselves authorize sending.
 

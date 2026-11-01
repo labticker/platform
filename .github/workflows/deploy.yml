@@ -107,6 +107,10 @@ jobs:
             exit 1
           fi
           pnpm exec tsx scripts/configure-pilot.ts
+      - name: Verify GitHub bootstrap transport before touching production data
+        env:
+          GITHUB_RELEASE_BOOTSTRAP_TOKEN: ${{ github.token }}
+        run: pnpm exec tsx scripts/github-release-preflight.ts
       - name: Install pinned Fly CLI
         run: |
           curl -fsSL https://github.com/superfly/flyctl/releases/download/v0.5.1/flyctl_0.5.1_Linux_x86_64.tar.gz -o /tmp/flyctl.tar.gz
