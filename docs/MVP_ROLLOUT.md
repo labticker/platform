@@ -1,6 +1,6 @@
 # MVP rollout and acceptance
 
-The public production site is currently the catalog preview. This runbook prepares the full monitoring application; it does not assert it has deployed. Canonical progress and test evidence are in IMPLEMENTATION_STATUS.md.
+The owner-only monitoring MVP is deployed; see [DEPLOYED_MVP.md](DEPLOYED_MVP.md) for exact image and acceptance. This runbook describes protected rollout and public/live-email gates. Canonical progress and test evidence are in IMPLEMENTATION_STATUS.md.
 
 ## Private owner acceptance
 
