@@ -52,7 +52,7 @@ test('digest coverage keeps scheduled cohorts separate from later acceptance dat
  const [source]=await db.insert(schema.releaseSources).values({applicationId:app.id,provider:'github-releases',externalKey:'fixture/coverage',url:'https://api.github.com/repos/fixture/coverage/releases'}).returning();assert.ok(source);
  const [release]=await db.insert(schema.releases).values({applicationId:app.id,releaseSourceId:source.id,dedupeKey:'fixture-release',title:'Fixture release',releaseUrl:'https://github.com/fixture/coverage/releases/tag/v1',notesText:'Fixture notes',firstSeenAt:new Date('2026-01-01')}).returning();assert.ok(release);
  for(let index=0;index<3;index++){
-  const [digest]=await db.insert(schema.digests).values({userId:user.id,scheduledFor:new Date(`2026-01-01T0${index}:00Z`),windowFrom:new Date('2025-12-31'),windowTo:new Date('2026-01-01'),status:index===0?'sent':index===1?'pending':'skipped',idempotencyKey:`coverage-${index}`,sentAt:index===0?new Date('2026-01-02'):null}).returning();assert.ok(digest);
+  const [digest]=await db.insert(schema.digests).values({userId:user.id,scheduledFor:new Date(`2026-01-01T0${index}:00Z`),windowFrom:new Date('2025-12-31'),windowTo:new Date('2026-01-01'),deliveryMode:'resend',status:index===0?'sent':index===1?'pending':'skipped',idempotencyKey:`coverage-${index}`,sentAt:index===0?new Date('2026-01-02'):null}).returning();assert.ok(digest);
   if(index<2)await db.insert(schema.digestItems).values({digestId:digest.id,releaseId:release.id,snapshot:{fixture:true}});
  }
  await materializeDaily(db,'2026-01-01',new Date('2026-01-03'));await materializeDaily(db,'2026-01-02',new Date('2026-01-03'));

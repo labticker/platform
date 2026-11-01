@@ -43,7 +43,7 @@ export function sanitizeTransportEvent(event:{uuid:string;event:string;propertie
   const clean=safeEvent(event.event,String(event.properties.route??''));
   if(!clean||!publicProjectKey)return null;
   const acquisition=clean.event==='$pageview'&&marketingRoutes.has(clean.properties.route)&&acquisitionCategories.has(event.properties.acquisition)?event.properties.acquisition as AcquisitionCategory:undefined;
-  return {uuid:event.uuid,event:clean.event,...(event.timestamp?{timestamp:event.timestamp}:{}),properties:{...clean.properties,...(acquisition?{acquisition}:{}),token:publicProjectKey,distinct_id:'$posthog_cookieless',$process_person_profile:false}};
+  return {uuid:event.uuid,event:clean.event,...(event.timestamp?{timestamp:event.timestamp}:{}),properties:{...clean.properties,...(acquisition?{acquisition}:{}),token:publicProjectKey,distinct_id:'$posthog_cookieless',$process_person_profile:false,$geoip_disable:true}};
 }
 export interface Analytics { capture(event:EventName, path:string):void; }
 export const noopAnalytics: Analytics = Object.freeze({capture:()=>{}});

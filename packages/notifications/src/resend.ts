@@ -1,6 +1,7 @@
 import {Resend,type CreateEmailOptions,type CreateEmailRequestOptions} from 'resend';
 import {isIP} from 'node:net';
-import {appOrigin,type EmailGateway,type EmailMessage} from './core.js';
+import {createHash} from 'node:crypto';
+import {appOrigin,MockEmailGateway,assertMockDelivery,type EmailGateway,type EmailMessage} from './core.js';
 
 export type DeliveryDisposition='retryable'|'permanent'|'ambiguous';
 /** Deliberately omits the provider response/cause, which can contain recipient data. */
@@ -36,8 +37,11 @@ function approve(config:ResendDigestApproval,now:Date):{from:string;origin:strin
  if(config.mode!=='resend'||config.publicEmailEnabled!==true||config.ownerApproval?.decision!=='live-email-approved'||!reference(config.ownerApproval.reference))return fail();
  const sender=config.sender,tracking=config.trackingReview;
  if(!sender||sender.status!=='verified'||!reference(sender.evidenceReference)||!tracking||!reference(tracking.reference)||tracking.authOpenTracking!==false||tracking.authClickTracking!==false||tracking.digestOpenTracking!==false||tracking.digestClickTracking!==false)return fail();
- const verified=domain(sender.domain),authentication=domain(config.authenticationDomain??'');
- if(authentication===verified||mailbox(sender.address)!==verified)return fail();
+ const verified=domain(sender.domain);
+ // OAuth-only pilots have no authentication email domain. A shared verified
+ // domain is also safe while both auth and digest tracking remain disabled.
+ if(config.authenticationDomain!==undefined)domain(config.authenticationDomain);
+ if(mailbox(sender.address)!==verified)return fail();
  const checked=Date.parse(sender.checkedAt);if(!Number.isFinite(checked)||checked>now.getTime())return fail();
  return {from:sender.address,origin:appOrigin(config.appUrl??'')};
 }
@@ -56,12 +60,16 @@ function validateMessage(message:EmailMessage,origin:string,key:string):void{
  * It does not remotely verify DNS; live rollout must verify this evidence with the owner.
  */
 export class ResendDigestGateway implements EmailGateway{
+ readonly deliveryMode='resend' as const;
+ readonly approval:ApprovedResendPolicy;
  private readonly sender:{from:string;origin:string};
  private readonly timeoutMs:number;
  constructor(config:ResendDigestApproval,private readonly client:ResendSendClient,now=new Date()){
   this.sender=approve(config,now);
   this.timeoutMs=config.requestTimeoutMs??10000;
   if(!Number.isSafeInteger(this.timeoutMs)||this.timeoutMs<100||this.timeoutMs>30000)throw new Error('Invalid bounded email request timeout');
+  this.approval=Object.freeze({}) as ApprovedResendPolicy;
+  policies.set(this.approval,{origin:this.sender.origin,gateway:this});
  }
  async send(message:EmailMessage,idempotencyKey:string):Promise<{id:string}>{
   validateMessage(message,this.sender.origin,idempotencyKey);
@@ -82,4 +90,52 @@ export function createResendDigestGateway(config:ResendDigestApproval,apiKey:str
  approve(config,new Date()); // Reject incomplete policy before constructing even the SDK.
  if(!apiKey.trim())throw new Error('Resend credential is missing');
  return new ResendDigestGateway(config,new Resend(apiKey));
+}
+declare const approvedResendBrand:unique symbol;
+export interface ApprovedResendPolicy {readonly [approvedResendBrand]:true;}
+const policies=new WeakMap<object,{origin:string;gateway:EmailGateway}>();
+/** Process-local capability created only by the fully validated live adapter.
+ * It is not serializable rollout evidence and must never be persisted in a job.
+ */
+export function assertApprovedResendPolicy(approval:unknown,origin:string,gateway?:EmailGateway):asserts approval is ApprovedResendPolicy{
+ const policy=approval&&typeof approval==='object'?policies.get(approval):undefined;
+ if(!policy||policy.origin!==appOrigin(origin)||(gateway&&policy.gateway!==gateway))throw new Error('Approved live email transport is required');
+}
+export interface EmailTransport {mode:'mock'|'resend';publicEmailEnabled:boolean;gateway:EmailGateway;liveApproval?:ApprovedResendPolicy;}
+/** Configuration-only construction; never verifies DNS or sends an email. The
+ * secret-free approval document must follow an explicit owner rollout decision.
+ */
+export function createEmailTransport(env:Record<string,string|undefined>):EmailTransport{
+ const mode=env.EMAIL_DELIVERY_MODE??'mock';
+ if(mode==='mock'){assertMockDelivery({mode,publicEmailEnabled:env.PUBLIC_EMAIL_ENABLED==='true'});return {mode:'mock',publicEmailEnabled:false,gateway:new MockEmailGateway()};}
+ if(mode!=='resend'||env.PUBLIC_EMAIL_ENABLED!=='true')throw new Error('Live email rollout is not enabled');
+ let config:ResendDigestApproval;
+ try{const parsed:unknown=JSON.parse(env.EMAIL_ROLLOUT_APPROVAL_JSON??'');if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))throw new Error();config=parsed as ResendDigestApproval;}catch{throw new Error('Live email approval document is required');}
+ if(config.mode&&config.mode!=='resend'||config.publicEmailEnabled===false||config.appUrl&&config.appUrl!==env.APP_URL)throw new Error('Live email approval does not match runtime configuration');
+ const gateway=createResendDigestGateway({...config,mode:'resend',publicEmailEnabled:true,appUrl:env.APP_URL},env.RESEND_API_KEY??'');
+ return {mode:'resend',publicEmailEnabled:true,gateway,liveApproval:gateway.approval};
+}
+/** Authentication messages have no unsubscribe, sponsor, pixel or tracked links.
+ * They use the same verified, tracking-disabled sender policy as release digests. */
+export class ResendAuthenticationGateway{
+ private readonly sender:{from:string;origin:string};
+ get from(){return this.sender.from;}
+ constructor(config:ResendDigestApproval,private readonly client:ResendSendClient){this.sender=approve(config,new Date());}
+ async send(to:string,link:string):Promise<{id:string}>{
+  mailbox(to);
+  let url:URL;try{url=new URL(link);if(url.origin!==this.sender.origin||url.pathname!=='/api/auth/callback/resend-email'||url.username||url.password||url.hash||!url.searchParams.get('token'))throw new Error();}catch{throw new EmailDeliveryError('permanent');}
+  const safe=url.href.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
+  const key=`auth/${createHash('sha256').update(url.href).digest('hex')}`;
+  try{
+   const response=await this.client.emails.send({from:this.sender.from,to:[to],subject:'Sign in to LabTicker',text:`Sign in to LabTicker: ${url.href}\nThis link expires in ten minutes. If you did not request it, ignore this email.`,html:`<!doctype html><html><body><h1>Sign in to LabTicker</h1><p><a href="${safe}">Sign in</a></p><p>This link expires in ten minutes. If you did not request it, ignore this email.</p></body></html>`},{idempotencyKey:key,signal:AbortSignal.timeout(10000)});
+   if(response.error||!response.data?.id||!/^[a-zA-Z0-9_-]{1,256}$/.test(response.data.id))throw new Error();
+   return {id:response.data.id};
+  }catch{throw new EmailDeliveryError('ambiguous');}
+ }
+}
+export function createAuthenticationEmailTransport(env:Record<string,string|undefined>):ResendAuthenticationGateway{
+ if(env.EMAIL_AUTH_ENABLED!=='true')throw new Error('Authentication email rollout is not enabled');
+ createEmailTransport(env); // Enforce all owner, verified-sender and tracking evidence.
+ const config=JSON.parse(env.EMAIL_ROLLOUT_APPROVAL_JSON!) as ResendDigestApproval;
+ return new ResendAuthenticationGateway({...config,mode:'resend',publicEmailEnabled:true,appUrl:env.APP_URL},new Resend(env.RESEND_API_KEY));
 }

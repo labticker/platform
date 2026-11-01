@@ -4,26 +4,31 @@ import type {PgDatabase,PgQueryResultHKT} from 'drizzle-orm/pg-core';
 import * as s from '@labticker/database/schema';
 import {assertMockDelivery,composeDigest,nextDigestAt,signUnsubscribe} from '@labticker/notifications';
 import type {DigestRelease,EmailGateway,EmailMessage} from '@labticker/notifications';
+import {assertApprovedResendPolicy,ResendDigestGateway,type ApprovedResendPolicy} from '@labticker/notifications/resend';
 
 type Database=PgDatabase<PgQueryResultHKT,typeof s>;
 export interface DigestQueueConfig {
  origin:string;unsubscribeSecret:string;senderIdentity:string;senderContact:string;
- mode?:string;publicEmailEnabled?:boolean;leaseMs?:number;maxAttempts?:number;
+ mode?:string;publicEmailEnabled?:boolean;liveApproval?:ApprovedResendPolicy;leaseMs?:number;maxAttempts?:number;
 }
 export interface DigestClaim {id:string;userId:string;leaseToken:string;}
 export type PreparationResult={status:'idle'|'queued'|'skipped';items:number;id?:string};
 const DAY=86400000;
 const reservedStatuses=['pending','claimed','failed','sent'];
 function checkConfig(config:DigestQueueConfig){
- assertMockDelivery(config);
+ if(config.mode==='resend'){
+  if(config.publicEmailEnabled!==true)throw new Error('Public email rollout is not approved');
+  assertApprovedResendPolicy(config.liveApproval,config.origin);
+ }else assertMockDelivery(config);
  if(config.leaseMs!==undefined&&(!Number.isSafeInteger(config.leaseMs)||config.leaseMs<1000||config.leaseMs>900000))throw new Error('Invalid lease duration');
  if(config.maxAttempts!==undefined&&(!Number.isInteger(config.maxAttempts)||config.maxAttempts<1||config.maxAttempts>10))throw new Error('Invalid attempt limit');
+ return config.mode==='resend'?'resend' as const:'mock' as const;
 }
 function labels(value:unknown):string[]{return Array.isArray(value)?value.flatMap(v=>v&&typeof v==='object'&&'label' in v&&typeof v.label==='string'?[v.label.slice(0,240)]:[]):[];}
 
 /** One due account per transaction. All account operations lock users before related rows. */
 export async function prepareDueDigest(db:Database,config:DigestQueueConfig,now=new Date()):Promise<PreparationResult>{
- checkConfig(config);
+ const deliveryMode=checkConfig(config);
  return db.transaction(async tx=>{
   const [candidate]=await tx.select({user:s.users,preference:s.preferences}).from(s.users)
    .innerJoin(s.preferences,eq(s.preferences.userId,s.users.id))
@@ -35,9 +40,9 @@ export async function prepareDueDigest(db:Database,config:DigestQueueConfig,now=
   const [preference]=await tx.select().from(s.preferences).where(eq(s.preferences.userId,user.id));
   if(!preference?.enabled||!preference.nextDueAt||preference.nextDueAt>now)return {status:'idle',items:0};
   const consent=await tx.select({id:s.emailConsents.id}).from(s.emailConsents).where(and(eq(s.emailConsents.userId,user.id),eq(s.emailConsents.consentType,'digest'),isNull(s.emailConsents.withdrawnAt))).limit(1);
-  const delivered=tx.select({id:s.deliveryReceipts.releaseId}).from(s.deliveryReceipts).where(and(eq(s.deliveryReceipts.userId,user.id),eq(s.deliveryReceipts.releaseId,s.releases.id)));
+  const delivered=tx.select({id:s.deliveryReceipts.releaseId}).from(s.deliveryReceipts).where(and(eq(s.deliveryReceipts.userId,user.id),eq(s.deliveryReceipts.deliveryMode,deliveryMode),eq(s.deliveryReceipts.releaseId,s.releases.id)));
   const reserved=tx.select({id:s.digestItems.releaseId}).from(s.digestItems).innerJoin(s.digests,eq(s.digestItems.digestId,s.digests.id))
-   .where(and(eq(s.digests.userId,user.id),inArray(s.digests.status,reservedStatuses),eq(s.digestItems.releaseId,s.releases.id)));
+   .where(and(eq(s.digests.userId,user.id),eq(s.digests.deliveryMode,deliveryMode),inArray(s.digests.status,reservedStatuses),eq(s.digestItems.releaseId,s.releases.id)));
   const hasWarnings=sql<boolean>`exists (select 1 from jsonb_array_elements(case when jsonb_typeof(${s.releases.warningFlags}) = 'array' then ${s.releases.warningFlags} else '[]'::jsonb end) as warning where jsonb_typeof(warning->'label') = 'string')`;
   // Every exclusion is applied before LIMIT, so a large delivered/reserved/old
   // history cannot hide eligible work. Only 101 bounded excerpts cross the DB
@@ -51,7 +56,7 @@ export async function prepareDueDigest(db:Database,config:DigestQueueConfig,now=
   const eligible=unseen.slice(0,100);
   const id=randomUUID();
   const payload=eligible.length?composeDigest({to:user.email,releases:eligible,origin:config.origin,unsubscribeToken:signUnsubscribe(user.id,new Date(now.getTime()+365*DAY),config.unsubscribeSecret),senderIdentity:config.senderIdentity,senderContact:config.senderContact}):null;
-  const [digest]=await tx.insert(s.digests).values({id,userId:user.id,scheduledFor:preference.nextDueAt,windowFrom:new Date(Math.min(now.getTime(),user.createdAt.getTime(),...eligible.map(release=>release.firstSeenAt.getTime()))),windowTo:now,status:payload?'pending':'skipped',idempotencyKey:`digest/${id}`,payload}).onConflictDoNothing({target:[s.digests.userId,s.digests.scheduledFor]}).returning();
+  const [digest]=await tx.insert(s.digests).values({id,userId:user.id,deliveryMode,scheduledFor:preference.nextDueAt,windowFrom:new Date(Math.min(now.getTime(),user.createdAt.getTime(),...eligible.map(release=>release.firstSeenAt.getTime()))),windowTo:now,status:payload?'pending':'skipped',idempotencyKey:`digest/${id}`,payload}).onConflictDoNothing({target:[s.digests.userId,s.digests.scheduledFor,s.digests.deliveryMode]}).returning();
   if(digest&&payload)await tx.insert(s.digestItems).values(eligible.map(release=>({digestId:id,releaseId:release.id,snapshot:release})));
   // Preparation never records delivery. Advancing the schedule does not exclude unseen
   // releases: reservations/receipts and enabledAt determine eligibility. Ordinary
@@ -64,10 +69,10 @@ export async function prepareDueDigest(db:Database,config:DigestQueueConfig,now=
 
 /** Persist a fenced lease before dispatch so crash recovery reuses the exact payload/key. */
 export async function claimDigest(db:Database,config:DigestQueueConfig,now=new Date()):Promise<DigestClaim|null>{
- checkConfig(config);
+ const deliveryMode=checkConfig(config);
  return db.transaction(async tx=>{
   const [candidate]=await tx.select({id:s.digests.id,userId:s.digests.userId}).from(s.users).innerJoin(s.digests,eq(s.digests.userId,s.users.id))
-   .where(and(or(and(eq(s.digests.status,'pending'),or(isNull(s.digests.nextAttemptAt),lte(s.digests.nextAttemptAt,now))),and(eq(s.digests.status,'claimed'),lte(s.digests.claimUntil,now)))))
+   .where(and(eq(s.digests.deliveryMode,deliveryMode),or(and(eq(s.digests.status,'pending'),or(isNull(s.digests.nextAttemptAt),lte(s.digests.nextAttemptAt,now))),and(eq(s.digests.status,'claimed'),lte(s.digests.claimUntil,now)))))
    .orderBy(asc(s.digests.scheduledFor)).limit(1).for('update',{of:s.users,skipLocked:true});
   if(!candidate)return null;
   const [digest]=await tx.select().from(s.digests).where(eq(s.digests.id,candidate.id)).for('update',{skipLocked:true});
@@ -93,11 +98,13 @@ export type DispatchResult='idle'|'sent'|'skipped'|'retry'|'failed'|'stale';
  * Callers must provide a bounded gateway. Runtime wiring uses only the local mock gateway.
  */
 export async function deliverClaim(db:Database,claim:DigestClaim,gateway:EmailGateway,config:DigestQueueConfig,now=new Date()):Promise<DispatchResult>{
- checkConfig(config);
+ const deliveryMode=checkConfig(config);
+ if(deliveryMode==='resend')assertApprovedResendPolicy(config.liveApproval,config.origin,gateway);
+ else if(gateway instanceof ResendDigestGateway)throw new Error('Live gateway cannot dispatch a mock queue');
  return db.transaction(async tx=>{
   const [user]=await tx.select().from(s.users).where(eq(s.users.id,claim.userId)).for('update');
   const [digest]=await tx.select().from(s.digests).where(eq(s.digests.id,claim.id)).for('update');
-  if(!user||!digest||digest.userId!==user.id||digest.status!=='claimed'||digest.leaseToken!==claim.leaseToken||!digest.claimUntil||digest.claimUntil<=now)return 'stale';
+  if(!user||!digest||digest.deliveryMode!==deliveryMode||digest.userId!==user.id||digest.status!=='claimed'||digest.leaseToken!==claim.leaseToken||!digest.claimUntil||digest.claimUntil<=now)return 'stale';
   if(digest.firstAttemptAt&&now.getTime()-digest.firstAttemptAt.getTime()>=DAY){await tx.update(s.digests).set({status:'failed',leaseToken:null,claimUntil:null,nextAttemptAt:null,lastError:'Manual reconciliation required; retry safety window expired'}).where(eq(s.digests.id,digest.id));return 'failed';}
   const skip=async(reason:string):Promise<DispatchResult>=>{
    // A committed claim is conservatively a possible dispatch. Releasing its item
@@ -114,7 +121,7 @@ export async function deliverClaim(db:Database,claim:DigestClaim,gateway:EmailGa
    .innerJoin(s.releases,eq(s.releases.id,s.digestItems.releaseId)).innerJoin(s.applications,eq(s.applications.id,s.releases.applicationId)).where(eq(s.digestItems.digestId,digest.id));
   if(!items.length)return skip('Empty digest');
   const subscriptions=await tx.select().from(s.subscriptions).where(eq(s.subscriptions.userId,user.id));
-  const delivered=await tx.select({id:s.deliveryReceipts.releaseId}).from(s.deliveryReceipts).where(and(eq(s.deliveryReceipts.userId,user.id),inArray(s.deliveryReceipts.releaseId,items.map(item=>item.release.id))));
+  const delivered=await tx.select({id:s.deliveryReceipts.releaseId}).from(s.deliveryReceipts).where(and(eq(s.deliveryReceipts.userId,user.id),eq(s.deliveryReceipts.deliveryMode,deliveryMode),inArray(s.deliveryReceipts.releaseId,items.map(item=>item.release.id))));
   if(delivered.length||items.some(({release:r,app})=>r.isBackfill||!app.isActive||app.hidden||!subscriptions.some(subscription=>subscription.applicationId===r.applicationId&&subscription.active&&subscription.enabledAt<r.firstSeenAt)))return skip('Digest selections changed; prepare remaining unseen releases again');
   let accepted:{id:string};
   try{accepted=await gateway.send(payload,digest.idempotencyKey);if(!accepted.id||accepted.id.length>256)throw new Error('Invalid provider acknowledgement');}
@@ -124,7 +131,7 @@ export async function deliverClaim(db:Database,claim:DigestClaim,gateway:EmailGa
    await tx.update(s.digests).set({status:permanent?'failed':'pending',leaseToken:null,claimUntil:null,nextAttemptAt:permanent?null:new Date(now.getTime()+Math.min(3600000,60000*2**Math.max(0,digest.attemptCount-1))),lastError:permanent?'Delivery requires manual review':'Delivery not confirmed; retry with unchanged payload and key'}).where(eq(s.digests.id,digest.id));
    return permanent?'failed':'retry';
   }
-  await tx.insert(s.deliveryReceipts).values(items.map(({release})=>({userId:user.id,releaseId:release.id,digestId:digest.id,resendId:accepted.id,acceptedAt:now})));
+  await tx.insert(s.deliveryReceipts).values(items.map(({release})=>({userId:user.id,releaseId:release.id,digestId:digest.id,resendId:accepted.id,deliveryMode,acceptedAt:now})));
   await tx.insert(s.digestMessageEngagement).values({digestId:digest.id,trackedOpenEnabled:false,trackedClickEnabled:false}).onConflictDoNothing();
   await tx.update(s.digests).set({status:'sent',resendId:accepted.id,sentAt:now,leaseToken:null,claimUntil:null,nextAttemptAt:null,lastError:null}).where(eq(s.digests.id,digest.id));
   return 'sent';

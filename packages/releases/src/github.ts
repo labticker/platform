@@ -56,17 +56,19 @@ export class GitHubReleasesAdapter implements ReleaseAdapter {
     private readonly now: () => Date = () => new Date(),
     private readonly maxPages = 5,
     private readonly historyMode: 'complete'|'recent-window' = 'complete',
+    private readonly perPage=100,
   ) {}
 
   async fetchReleases(source: ReleaseSource, cache: SourceCache = {}): Promise<ReleasePollResult> {
     if (source.kind !== 'github-releases' || source.channel !== 'stable') throw new Error('Unsupported release source');
     validateRepository(source.repository);
     if (!Number.isInteger(this.maxPages) || this.maxPages < 1 || this.maxPages > 10) throw new Error('Invalid release pagination bound');
+    if(!Number.isInteger(this.perPage)||this.perPage<1||this.perPage>100)throw new Error('Invalid release page size');
     const observedAt = this.now();
     const releases: NormalizedRelease[] = [];
     let updatedCache: SourceCache = cache;
     for (let page = 1; page <= this.maxPages; page++) {
-      const reply = await this.http.get(`https://api.github.com/repos/${source.repository}/releases?per_page=100&page=${page}`, page === 1 ? cache : {});
+      const reply = await this.http.get(`https://api.github.com/repos/${source.repository}/releases?per_page=${this.perPage}&page=${page}`, page === 1 ? cache : {});
       if (page === 1) {
         updatedCache = { etag: reply.headers.etag ?? cache.etag, lastModified: reply.headers['last-modified'] ?? cache.lastModified };
         if (reply.status === 304) return { status: 'not-modified', cache: updatedCache };
@@ -74,7 +76,7 @@ export class GitHubReleasesAdapter implements ReleaseAdapter {
       if (reply.status !== 200) throw new Error(`GitHub release source HTTP ${reply.status}`);
       const payload: unknown = JSON.parse(reply.body);
       releases.push(...parseGitHubReleases(payload, source.repository, observedAt));
-      if ((payload as unknown[]).length < 100) return { status: 'modified', cache: updatedCache, releases };
+      if ((payload as unknown[]).length < this.perPage) return { status: 'modified', cache: updatedCache, releases };
     }
     // Explicit recent-window mode behaves like a bounded feed. Callers must disclose
     // the coverage limit; complete-history callers continue to fail closed.

@@ -13,6 +13,8 @@ export interface RequestPolicy {
   readonly timeoutMs?: number;
   readonly maxBytes?: number;
   readonly maxRedirects?: number;
+  /** Optional ephemeral CI token, bound exclusively to the public GitHub API. */
+  readonly githubToken?: string;
 }
 export interface PinnedRequest {
   readonly url: URL;
@@ -109,6 +111,7 @@ export class SafeHttpClient {
     const timeoutMs = this.policy.timeoutMs ?? 10_000;
     const maxBytes = this.policy.maxBytes ?? 2_097_152;
     const maxRedirects = this.policy.maxRedirects ?? 3;
+    if(this.policy.githubToken&&(!/^[A-Za-z0-9_]+$/.test(this.policy.githubToken)||this.policy.githubToken.length>1024||this.policy.allowedHosts.length!==1||this.policy.allowedHosts[0]!=='api.github.com'))throw new Error('Invalid GitHub credential policy');
     if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 60_000 ||
         !Number.isInteger(maxBytes) || maxBytes < 1 || maxBytes > 8_388_608 ||
         !Number.isInteger(maxRedirects) || maxRedirects < 0 || maxRedirects > 5) {
@@ -132,6 +135,7 @@ export class SafeHttpClient {
           'user-agent': 'LabTicker/0.1 release-monitor', accept: 'application/vnd.github+json',
           'accept-encoding': 'identity',
         };
+        if(this.policy.githubToken&&url.hostname==='api.github.com')headers.authorization=`Bearer ${this.policy.githubToken}`;
         for (const [name, candidate] of [['if-none-match', conditional.etag], ['if-modified-since', conditional.lastModified]] as const) {
           if (candidate !== undefined) {
             if (candidate.length > 1024 || /[\r\n]/.test(candidate)) throw new Error('Invalid conditional HTTP header');

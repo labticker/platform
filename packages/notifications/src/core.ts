@@ -72,6 +72,7 @@ export interface EmailMessage { to: string; subject: string; html: string; text:
 export interface EmailGateway { send(message: EmailMessage, idempotencyKey: string): Promise<{ id: string }>; }
 /** Local fixture inbox only; no network, logs, persistence, or provider calls. */
 export class MockEmailGateway implements EmailGateway {
+  readonly deliveryMode='mock' as const;
   readonly inbox: EmailMessage[] = [];
   private readonly accepted = new Map<string,{hash:string; id:string}>();
   async send(message: EmailMessage, idempotencyKey: string): Promise<{id:string}> {

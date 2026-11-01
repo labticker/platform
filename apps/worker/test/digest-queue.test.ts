@@ -8,8 +8,23 @@ import * as s from '@labticker/database/schema';
 import {MockEmailGateway} from '@labticker/notifications';
 import type {EmailMessage} from '@labticker/notifications';
 import {prepareDueDigest,claimDigest,deliverClaim,sendOneDigest} from '../src/digests.js';
+import {ResendDigestGateway} from '@labticker/notifications/resend';
 const now=new Date('2026-03-09T09:00:00Z');
 const config={origin:'https://fixture.fly.dev',unsubscribeSecret:'fixture-only-signing-key-'.repeat(3),senderIdentity:'LabTicker fixture',senderContact:'Fictional fixture contact',leaseMs:1000};
+test('mock receipts cannot count as real delivery or block an explicitly approved mode transition',async()=>{
+ const f=await fixture();try{
+  await prepareDueDigest(f.db,config,now);assert.equal(await sendOneDigest(f.db,new MockEmailGateway(),config,now),'sent');
+  await assert.rejects(prepareDueDigest(f.db,{...config,mode:'resend',publicEmailEnabled:true},now),/Approved/);
+  let calls=0;const gateway=new ResendDigestGateway({mode:'resend',publicEmailEnabled:true,ownerApproval:{decision:'live-email-approved',reference:'fixture/owner-decision'},sender:{address:'updates@updates.example.org',domain:'updates.example.org',status:'verified',evidenceReference:'fixture/verification',checkedAt:'2026-03-01'},trackingReview:{reference:'fixture/tracking',authOpenTracking:false,authClickTracking:false,digestOpenTracking:false,digestClickTracking:false},appUrl:config.origin},{emails:{async send(){calls++;return {data:{id:'provider-fixture'},error:null};}}},now);
+  const real={...config,mode:'resend',publicEmailEnabled:true,liveApproval:gateway.approval};
+  const next=new Date(now.getTime()+1000);await f.db.update(s.preferences).set({nextDueAt:next}).where(eq(s.preferences.userId,f.user.id));
+  assert.equal((await prepareDueDigest(f.db,real,next)).status,'queued');assert.equal(await claimDigest(f.db,config,next),null);
+  const claim=await claimDigest(f.db,real,next);assert.ok(claim);
+  await assert.rejects(deliverClaim(f.db,claim,new MockEmailGateway(),real,next),/Approved/);
+  assert.equal(await deliverClaim(f.db,claim,gateway,real,next),'sent');assert.equal(calls,1);
+  const receipts=await f.db.select().from(s.deliveryReceipts);assert.equal(receipts.length,2);assert.deepEqual(new Set(receipts.map(receipt=>receipt.deliveryMode)),new Set(['mock','resend']));
+ }finally{await f.client.close();}
+});
 async function fixture(withRelease=true){
  const client=new PGlite();const db=drizzle(client,{schema:s});
  await migrate(db,{migrationsFolder:'../../drizzle'});

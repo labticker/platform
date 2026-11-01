@@ -32,7 +32,7 @@ test('signed webhook processing dedupes and retains earliest delivery, gates tra
   const [user]=await db.insert(schema.users).values({email:'fixture@example.com',emailVerified:new Date()}).returning();assert.ok(user);
   await db.insert(schema.preferences).values({userId:user.id,enabled:true,nextDueAt:new Date()});
   await db.insert(schema.emailConsents).values({userId:user.id,consentType:'digest',policyVersion:'fixture',source:'test',consentedAt:new Date()});
-  const [digest]=await db.insert(schema.digests).values({userId:user.id,scheduledFor:new Date(),windowFrom:new Date(0),windowTo:new Date(),idempotencyKey:'fixture',resendId:'fixture-message',status:'sent'}).returning();assert.ok(digest);
+  const [digest]=await db.insert(schema.digests).values({userId:user.id,scheduledFor:new Date(),windowFrom:new Date(0),windowTo:new Date(),idempotencyKey:'fixture',resendId:'fixture-message',status:'sent',deliveryMode:'resend'}).returning();assert.ok(digest);
   const [queued]=await db.insert(schema.digests).values({userId:user.id,scheduledFor:new Date(Date.now()+10000),windowFrom:new Date(0),windowTo:new Date(),idempotencyKey:'fixture-queued',status:'claimed'}).returning();assert.ok(queued);
   const deliver=signed('email.delivered','fixture-message',new Date(Date.now()-1000));const event=verifyResendWebhook(deliver.payload,deliver.headers,secret);
   assert.equal(await processResendEvent(db,event),'processed');assert.equal(await processResendEvent(db,event),'duplicate');
@@ -56,9 +56,13 @@ test('signed webhook processing dedupes and retains earliest delivery, gates tra
   assert.equal((await db.select().from(schema.accountStateEvents)).length,2);
   const storage=JSON.stringify(await db.select().from(schema.resendWebhookEvents));assert.ok(!storage.includes('private@example.com'));assert.ok(!storage.includes('192.0.2.1'));assert.ok(!storage.includes('token=secret'));
   const unknown=signed('email.future_event');assert.equal(await processResendEvent(db,verifyResendWebhook(unknown.payload,unknown.headers,secret)),'ignored');
-  const racing=signed('email.delivered','not-yet-acknowledged');const before=(await db.select().from(schema.resendWebhookEvents)).length;
+  const racing=signed('email.delivered','not-yet-acknowledged');
+  await db.insert(schema.authEmailMessages).values({providerId:'auth-fixture-message'});
+  const authentication=signed('email.opened','auth-fixture-message');assert.equal(await processResendEvent(db,verifyResendWebhook(authentication.payload,authentication.headers,secret)),'ignored');
+  const authLedger=(await db.select().from(schema.authEmailMessages))[0];assert.deepEqual(Object.keys(authLedger??{}).sort(),['acceptedAt','providerId']);
+  const beforeRace=(await db.select().from(schema.resendWebhookEvents)).length;
   await assert.rejects(processResendEvent(db,verifyResendWebhook(racing.payload,racing.headers,secret)),RetryableWebhook);
-  assert.equal((await db.select().from(schema.resendWebhookEvents)).length,before);
+  assert.equal((await db.select().from(schema.resendWebhookEvents)).length,beforeRace);
   await db.update(schema.digests).set({resendId:'not-yet-acknowledged'}).where(eq(schema.digests.id,digest.id));
   assert.equal(await processResendEvent(db,verifyResendWebhook(racing.payload,racing.headers,secret)),'processed');
  }finally{await client.close();}

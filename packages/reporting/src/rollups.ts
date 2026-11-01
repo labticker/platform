@@ -1,11 +1,11 @@
 import {gaugeMetrics,metrics,rateDefinitions,type Metric} from './metrics.js';
-export const completeMarkers=['report_complete','source_snapshot_complete'] as const;
+export const completeMarkers=['report_complete','source_snapshot_complete','traffic_report_complete'] as const;
 export interface StoredAggregate {metricDate:string;metricName:string;dimensionKey:string;metricValue:number;computedAt:Date;}
 type Value={available:true;value:number}|{available:false;reason:'missing_or_suppressed'|'incomplete_pair'};
 function dates(from:string,to:string){const result:string[]=[];for(let time=Date.parse(from);time<=Date.parse(to);time+=86400000)result.push(new Date(time).toISOString().slice(0,10));return result;}
 function completeRow(rows:readonly StoredAggregate[],metric:Metric,date:string){
  const value=rows.find(r=>r.metricDate===date&&r.metricName===metric&&r.dimensionKey==='all'&&Number.isSafeInteger(r.metricValue)&&r.metricValue>=0);
- const marker=rows.find(r=>r.metricDate===date&&r.metricName===(gaugeMetrics.has(metric)?'source_snapshot_complete':'report_complete')&&r.dimensionKey==='all'&&r.metricValue===1);
+ const marker=rows.find(r=>r.metricDate===date&&r.metricName===(gaugeMetrics.has(metric)?'source_snapshot_complete':metric.startsWith('traffic_')?'traffic_report_complete':'report_complete')&&r.dimensionKey==='all'&&r.metricValue===1);
  return value&&marker&&value.computedAt.getTime()===marker.computedAt.getTime()?value:undefined;
 }
 function rawCount(rows:readonly StoredAggregate[],metric:Metric,from:string,to:string):number|null{
@@ -18,7 +18,7 @@ function rawCount(rows:readonly StoredAggregate[],metric:Metric,from:string,to:s
 const shiftDate=(date:string,days:number)=>new Date(Date.parse(date)+days*86400000).toISOString().slice(0,10);
 function ratesForWindow(rows:readonly StoredAggregate[],from:string,to:string,owner:boolean,availableFrom:string,availableTo:string,matureWindows=false){
  return rateDefinitions.map(definition=>{
-  const maturityDays=definition.name==='activation'?7:definition.name==='retention_day30'?30:0;
+  const maturityDays=definition.name==='activation'?7:definition.name==='retention_day30'?30:definition.name==='engagement_day30'?37:0;
   const lag=matureWindows?maturityDays:0,cohortFrom=shiftDate(from,-lag),cohortTo=shiftDate(to,-lag);
   const windowBasis=gaugeMetrics.has(definition.numerator)?'observed_snapshot' as const:lag?'maturity_date' as const:maturityDays?'signup_date_matured_subset' as const:'calendar_date' as const;
   const metadata={cohortFrom,cohortTo,windowFrom:from,windowTo:to,windowBasis,maturityLagDays:lag,asOf:null as {from:string;to:string}|null};
@@ -30,8 +30,8 @@ function ratesForWindow(rows:readonly StoredAggregate[],from:string,to:string,ow
    // Maturity-day windows require the entire signup day to have matured, not
    // merely a handful of early signups already eligible in an old partial run.
    const matureBy=Date.parse(date)+(lag+1)*86400000;
-   if(!top||!bottom||top.computedAt.getTime()!==bottom.computedAt.getTime()||(lag>0&&top.computedAt.getTime()<matureBy))return {...definition,...metadata,available:false as const,reason:'incomplete_pair' as const};
-   watermarks.push(top.computedAt.getTime());
+   if(!top||!bottom||(definition.name!=='signup_conversion_directional'&&top.computedAt.getTime()!==bottom.computedAt.getTime())||(lag>0&&top.computedAt.getTime()<matureBy))return {...definition,...metadata,available:false as const,reason:'incomplete_pair' as const};
+   watermarks.push(top.computedAt.getTime(),bottom.computedAt.getTime());
   }
   const top=rawCount(rows,definition.numerator,cohortFrom,cohortTo),bottom=rawCount(rows,definition.denominator,cohortFrom,cohortTo);
   const asOf=watermarks.length?{from:new Date(Math.min(...watermarks)).toISOString(),to:new Date(Math.max(...watermarks)).toISOString()}:null;

@@ -44,6 +44,13 @@ test('GitHub polling preserves conditional cache and distinguishes unchanged fro
   const empty = new GitHubReleasesAdapter({ async get() { return { status: 200, headers: {}, body: '[]' }; } });
   assert.deepEqual((await empty.fetchReleases(source)).status, 'modified');
 });
+test('asset-heavy sources use bounded smaller pages without dropping the next page',async()=>{
+ const urls:string[]=[];
+ const adapter=new GitHubReleasesAdapter({async get(url){urls.push(url);return {status:200,headers:{},body:JSON.stringify(urls.length===1?[fixture(),fixture({id:43})]:[fixture({id:44})])};}},()=>observedAt,5,'recent-window',2);
+ const result=await adapter.fetchReleases(source);assert.equal(result.status,'modified');if(result.status==='modified')assert.equal(result.releases.length,3);
+ assert.ok(urls[0]?.includes('per_page=2&page=1'));assert.ok(urls[1]?.includes('per_page=2&page=2'));
+ await assert.rejects(new GitHubReleasesAdapter(undefined,undefined,5,'recent-window',0).fetchReleases(source),/page size/);
+});
 
 test('GitHub polling does not silently lose pages or convert outages to empty success', async () => {
   let pages = 0;

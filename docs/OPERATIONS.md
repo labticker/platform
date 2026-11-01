@@ -1,3 +1,5 @@
+> Historical baseline: superseded for current rollout by [MVP_ROLLOUT.md](MVP_ROLLOUT.md) and [IMPLEMENTATION_STATUS.md](../IMPLEMENTATION_STATUS.md). Statements below describe earlier acceptance and are not current cloud status.
+
 # Operations readiness runbook
 
 This is a preparation checklist; deployment and restore have not been executed.

@@ -3,7 +3,7 @@ import {RetryableWebhook,processResendEvent,readWebhookBody,verifyResendWebhook}
 export const runtime='nodejs';
 export async function POST(request:Request):Promise<Response>{
  const secret=process.env.RESEND_WEBHOOK_SECRET;
- if(!secret||!process.env.DATABASE_URL)return Response.json({error:'Webhook unavailable'},{status:503});
+ if(!secret||!(process.env.WEB_DATABASE_URL||process.env.DATABASE_URL))return Response.json({error:'Webhook unavailable'},{status:503});
  let event;
  try {event=verifyResendWebhook(await readWebhookBody(request),request.headers,secret);}
  catch{return Response.json({error:'Invalid webhook'},{status:400});}

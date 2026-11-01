@@ -1,6 +1,19 @@
 import type {InferSelectModel} from 'drizzle-orm';
 import type {accountStateEvents,users} from '@labticker/database/schema';
 type State=InferSelectModel<typeof accountStateEvents>;type User=InferSelectModel<typeof users>;
+/** Engagement is measured independently of still-subscribed retention. A complete
+ * days 23–37 window requires 37 elapsed days; missing signup history is excluded. */
+export function engagedCohortCounts(accounts:readonly User[],history:readonly State[],start:Date,end:Date,asOf:Date){
+ let engagedEligible=0,engagedDay30=0;
+ for(const user of accounts){
+  const verified=user.emailVerified;if(!verified||verified<start||verified>=end)continue;
+  const from=verified.getTime()+23*86400000,to=verified.getTime()+37*86400000;
+  if(to>asOf.getTime()||!history.some(e=>e.userId===user.id&&e.eventType==='verified_signup'&&e.occurredAt.getTime()===verified.getTime()))continue;
+  engagedEligible++;
+  if(history.some(e=>e.userId===user.id&&['dashboard_login','dashboard_view'].includes(e.eventType)&&e.occurredAt.getTime()>=from&&e.occurredAt.getTime()<=to&&e.occurredAt<=asOf))engagedDay30++;
+ }
+ return {engagedEligible,engagedDay30};
+}
 /** Cohorts only include users with an authoritative baseline at verification.
  * Pre-instrumentation histories are excluded, never reconstructed from today's state.
  */

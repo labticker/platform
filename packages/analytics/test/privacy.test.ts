@@ -14,7 +14,7 @@ test('disabled, DNT and opt-out modes never initialize vendor SDK',async()=>{
 });
 test('transport retains public project routing without person updates or identifying properties',()=>{
  const input={uuid:'fixture-event',event:'$pageview',properties:{route:'/apps/immich?email=private@example.com',token:'untrusted',email:'private@example.com',$current_url:'https://example.com/?token=secret',$referrer:'https://example.com/private'},$set:{email:'private@example.com'},$set_once:{user_id:'private-id'}};
- assert.deepEqual(sanitizeTransportEvent(input,'public-fixture-project'),{uuid:'fixture-event',event:'$pageview',properties:{route:'/apps/[slug]',token:'public-fixture-project',distinct_id:'$posthog_cookieless',$process_person_profile:false}});
+ assert.deepEqual(sanitizeTransportEvent(input,'public-fixture-project'),{uuid:'fixture-event',event:'$pageview',properties:{route:'/apps/[slug]',token:'public-fixture-project',distinct_id:'$posthog_cookieless',$process_person_profile:false,$geoip_disable:true}});
  assert.equal(sanitizeTransportEvent({...input,event:'$identify'},'public-fixture-project'),null);
 });
 test('app-detail template survives adapter and transport double sanitization',()=>{

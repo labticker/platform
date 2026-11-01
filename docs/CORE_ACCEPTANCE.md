@@ -1,3 +1,5 @@
+> Historical baseline: superseded for current rollout by [MVP_ROLLOUT.md](MVP_ROLLOUT.md) and [IMPLEMENTATION_STATUS.md](../IMPLEMENTATION_STATUS.md). Statements below describe earlier acceptance and are not current cloud status.
+
 # Local acceptance
 
 Passing local checks does not complete an entire phase or authorize deployment, public email, spending or advertising.

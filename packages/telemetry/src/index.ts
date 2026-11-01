@@ -37,7 +37,15 @@ export async function processResendEvent(db:PgDatabase<PgQueryResultHKT,typeof s
       return 'ignored';
     }
     const [digest]=await tx.select().from(schema.digests).where(eq(schema.digests.resendId,event.emailId));
-    if(!digest) throw new RetryableWebhook('Message acknowledgement not yet available');
+    if(!digest){
+      const [authentication]=await tx.select({id:schema.authEmailMessages.providerId}).from(schema.authEmailMessages).where(eq(schema.authEmailMessages.providerId,event.emailId)).limit(1);
+      if(!authentication)throw new RetryableWebhook('Message acknowledgement not yet available');
+      await tx.update(schema.resendWebhookEvents).set({processingStatus:'ignored',processedAt:now}).where(eq(schema.resendWebhookEvents.id,record.id));return 'ignored';
+    }
+    if(digest.deliveryMode!=='resend'){
+      await tx.update(schema.resendWebhookEvents).set({processingStatus:'ignored',processedAt:now}).where(eq(schema.resendWebhookEvents.id,record.id));
+      return 'ignored';
+    }
     await tx.insert(schema.digestMessageEngagement).values({digestId:digest.id}).onConflictDoNothing();
     const [engagement]=await tx.select().from(schema.digestMessageEngagement).where(eq(schema.digestMessageEngagement.digestId,digest.id));
     if(!engagement) throw new RetryableWebhook('Engagement unavailable');
