@@ -28,7 +28,7 @@ test('private tests use selected historical samples, idempotency, quotas and sup
  assert.deepEqual(await enqueueEmailTest(db,{userId:user.id,requestId,consent:true},env,now),{status:'already-queued'});
  for(let i=0;i<2;i++)assert.deepEqual(await enqueueEmailTest(db,{userId:user.id,requestId:randomUUID(),consent:true},env,now),{status:'queued'});
  assert.deepEqual(await enqueueEmailTest(db,{userId:user.id,requestId:randomUUID(),consent:true},env,now),{status:'rate-limited'});
- const [row]=await db.select().from(s.emailTestMessages);assert.ok(row);assert.match(JSON.stringify(row.payload),/\[TEST\]/);assert.match(JSON.stringify(row.payload),/Historical sample/);
+ const [row]=await db.select().from(s.emailTestMessages);assert.ok(row);assert.match(JSON.stringify(row.payload),/\[TEST\]/);assert.match(JSON.stringify(row.payload),/Historical sample/);assert.match((row.payload as {html:string}).html,/^<!doctype html><html><body><p><strong>PRIVATE EMAIL TEST/);
  assert.equal((await db.select().from(s.digests)).length,0);assert.equal((await db.select().from(s.deliveryReceipts)).length,0);assert.equal((await db.select().from(s.preferences)).length,0);assert.equal((await db.select().from(s.emailConsents)).length,0);
  await db.update(s.users).set({suppressedAt:now}).where(eq(s.users.id,user.id));assert.deepEqual(await enqueueEmailTest(db,{userId:user.id,requestId:randomUUID(),consent:true},env,now),{status:'suppressed'});
  }finally{await client.close();}
