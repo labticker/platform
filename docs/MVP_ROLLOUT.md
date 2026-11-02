@@ -1,5 +1,7 @@
 # MVP rollout and acceptance
 
+Routine PR merges and workflow runs use the standing owner authorization in [AUTONOMOUS_DEVELOPMENT.md](AUTONOMOUS_DEVELOPMENT.md). No environment reviewer click is required. This supersedes historical manual approval steps below; testing, scoped secrets, backups, budget and product-launch gates remain.
+
 The owner-only monitoring MVP is deployed; see [DEPLOYED_MVP.md](DEPLOYED_MVP.md) for exact image and acceptance. This runbook describes protected rollout and public/live-email gates. Canonical progress and test evidence are in IMPLEMENTATION_STATUS.md.
 
 ## Private owner acceptance

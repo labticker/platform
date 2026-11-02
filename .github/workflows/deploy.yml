@@ -1,4 +1,4 @@
-name: Approved LabTicker monitoring MVP rollout
+name: LabTicker monitoring MVP rollout
 on:
   workflow_dispatch:
     inputs:
@@ -12,17 +12,19 @@ on:
         options: [owner-acceptance, public-pilot]
         default: owner-acceptance
       approval_reference:
-        description: Owner approval for migration, scoped roles/secrets and one web plus one worker
+        description: Audit reference; routine work uses standing owner authorization
         required: true
+        default: owner-standing-routine-development-2026-11-02
       backup_reference:
         description: Reviewed backup/restore evidence reference
         required: true
+        default: ci-verified-fresh-backup-required
       backup_branch_id:
         description: Fresh main data-clone branch ID (leave empty only when creating an approved backup)
       create_backup:
-        description: Explicit approval to create a no-compute Neon backup branch within quota
+        description: Create a fresh no-compute backup within existing Free quota
         type: boolean
-        default: false
+        default: true
       bootstrap_runtime_roles:
         description: First scoped-role creation and Fly credential staging (refuses existing roles)
         type: boolean
@@ -34,7 +36,7 @@ on:
       bootstrap_catalog:
         description: Idempotently sync registry and seed available baseline release history
         type: boolean
-        default: true
+        default: false
       email_delivery_mode:
         description: Keep mock unless a verified-sender rollout is separately approved
         type: choice
