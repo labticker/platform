@@ -28,7 +28,7 @@ export async function enqueueEmailTest(db:Database,input:{userId:string;consent:
   if(!preview.sample.length)return {status:'no-releases'};
   const payload=composeDigest({to:user.email,origin:policy.origin,senderIdentity:policy.senderIdentity,senderContact:policy.senderContact,unsubscribeToken:signUnsubscribe(user.id,new Date(now.getTime()+365*86400000),env.UNSUBSCRIBE_SECRET??''),releases:preview.sample.map((row,index)=>({id:String(index),appId:String(index),appName:row.appName,title:row.title,version:row.version,releaseUrl:row.url??'',notes:row.notes,firstSeenAt:now,publishedAt:row.publishedAt?new Date(row.publishedAt):null,isBackfill:true,warnings:row.warnings}))});
   if(!payload)return {status:'no-releases'};
-  payload.subject='[TEST] '+payload.subject;payload.html='<p><strong>PRIVATE EMAIL TEST — historical sample, not a scheduled digest.</strong></p>'+payload.html;payload.text='PRIVATE EMAIL TEST — historical sample, not a scheduled digest.\n\n'+payload.text;
+  payload.subject='[TEST] '+payload.subject;payload.html=payload.html.replace('<body>','<body><p><strong>PRIVATE EMAIL TEST — historical sample, not a scheduled digest.</strong></p>');payload.text='PRIVATE EMAIL TEST — historical sample, not a scheduled digest.\n\n'+payload.text;
   await tx.insert(s.emailTestMessages).values({userId:user.id,requestId:input.requestId,payload,createdAt:now});
   return {status:'queued'};
  });
