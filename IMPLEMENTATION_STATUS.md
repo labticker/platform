@@ -1,6 +1,6 @@
 # Implementation status
 
-Updated 2026-11-02. MVP PR #1 merged at e7b765f after green CI and an explicitly authorized one-time owner admin merge. The full monitoring application is live at https://labticker.fly.dev from 956a39c in private owner-acceptance mode. One web and one worker Machine run against Neon, with saved monitors and simulated email. No phase is declared complete without its remaining external acceptance; this is not public pilot or beta enrollment.
+Updated 2026-11-02. MVP PR #1 merged at e7b765f after green CI and an explicitly authorized one-time owner admin merge. The full monitoring application is live at https://labticker.fly.dev from ee536ec in private owner-acceptance mode. One web and one worker Machine run against Neon, with saved monitors and simulated email. No phase is declared complete without its remaining external acceptance; this is not public pilot or beta enrollment.
 
 | Phase | Implemented and tested | Remaining acceptance |
 |---|---|---|
@@ -14,7 +14,7 @@ Updated 2026-11-02. MVP PR #1 merged at e7b765f after green CI and an explicitly
 
 ## Current validation
 
-100 automated tests pass: catalog 5, database 14, releases 16, notifications 19, analytics 6, reporting 11, telemetry 3, worker 16, web 10. All nine package typechecks, eight build scripts and all 50 catalog definitions pass. Fresh disposable PostgreSQL 17 acceptance passes concurrent preparation/dispatch, receipt dedupe and locked-user skipping. A separate three-role fixture exercises real catalog, authentication, monitor, preference, mock digest, source-control, retention and deletion paths, proves aggregate SQL read-only access/raw-table denial, and reapplies grants idempotently.
+101 automated tests pass: catalog 5, database 14, releases 16, notifications 19, analytics 6, reporting 11, telemetry 3, worker 16, web 11. All nine package typechecks, eight build scripts and all 50 catalog definitions pass. Fresh disposable PostgreSQL 17 acceptance passes concurrent preparation/dispatch, receipt dedupe and locked-user skipping. A separate three-role fixture exercises real catalog, authentication, monitor, preference, mock digest, source-control, retention and deletion paths, proves aggregate SQL read-only access/raw-table denial, and reapplies grants idempotently.
 
 Neon development has migrations 0000–0008, all 50 sources successfully polled and 5,336 retained real releases. The production worker image completed an actual development tick with 50 registry entries, 105 report dates and no failed sources/digests. Development temporary runtime-role checks passed and removed their test roles. No production subscriber queries or migrations were used for this evidence. The earlier restore-check branch proves a seven-migration schema clone only; it is not current production recovery proof.
 
@@ -54,6 +54,8 @@ The site now uses a navy header, warm neutral canvas, white cards, blue actions/
 
 At the owner's explicit request, required PR reviews were removed from main, production/infrastructure reviewer and timer rules were removed, and repository auto-merge was enabled. Readback confirms required checks/strict branches remain, no force pushes/deletions, and environment branch restrictions remain. Root AGENTS.md and its template grant standing authorization for trusted CI-green PR merges and routine existing-app runs, including tested additive migrations and Free-quota backups. New spending, destructive changes, public/privacy rollout, real-email and PMF/ads decisions remain separate. Deployment audit/backup defaults now support that standing policy, with no routine catalog reseed. See docs/AUTONOMOUS_DEVELOPMENT.md. No app deployment or new resource is needed for this policy update.
 
-## GitHub emoji shortcodes (pending deployment)
+## GitHub emoji shortcodes (deployed)
 
 The shared release/digest-preview Markdown renderer now includes pinned remark-gemoji 8.0.0 with the GitHub emoji catalogue. Recognized shortcodes such as :link: and :rocket: render as native Unicode; unknown codes, URL destinations, inline code and fenced code remain literal. Existing raw-HTML, unsafe-URL and remote-image restrictions remain. All 11 web tests, web typecheck and the production web build pass; full required CI runs before the autonomous merge/deployment. Stored upstream notes and digest delivery behavior are unchanged, with no new migration or feature activation.
+
+Standing-authorized rollout 41492274132 completed successfully with no pending environment approvals. Both Machines now use ee536ecdc4bf3f088b393b888b2e9a1cd3488435, digest sha256:2b6547b695dd6a30b22be9df766d45d341f4ae636d1565884efb3bdfba3dfd9c. All 101 tests and deployment checks pass. Public browser acceptance observed 25 literal :rocket: notes before deployment and 25 Unicode rocket headings with zero literal rocket headings afterward. Mobile overflow=false, third-party requests=0, workerReady=true. Shared release and digest-preview rendering keeps code examples and URL destinations literal; no stored notes or delivery data were rewritten. The earlier pending Markdown/redesign notes are historical: those features were deployed in approved run 41476528783 at f4f2328 and remain live. Read-only acceptance is repeatable with scripts/live-release-emoji-browser-acceptance.js.

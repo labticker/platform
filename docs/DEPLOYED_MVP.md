@@ -1,3 +1,5 @@
+> Current deployment, verified 2026-11-02: [41492274132](https://github.com/labticker/platform/actions/runs/41492274132), source ee536ecdc4bf3f088b393b888b2e9a1cd3488435, shared image sha256:2b6547b695dd6a30b22be9df766d45d341f4ae636d1565884efb3bdfba3dfd9c. GitHub emoji shortcodes now render as Unicode, with 101 passing tests and real browser verification of 25 converted release headings. The preceding Markdown/light-colour redesign deployment 41476528783 also passed its actual date/palette/mobile checks. Owner-only access, mock email, analytics noop and ads off remain unchanged. Earlier rollout details below are historical.
+
 # Deployed monitoring MVP: private owner acceptance
 
 Verified 2026-11-01 UTC at https://labticker.fly.dev.
