@@ -1,6 +1,6 @@
 # Implementation status
 
-Updated 2026-11-01. MVP PR #1 merged at e7b765f after green CI and an explicitly authorized one-time owner admin merge. The full monitoring application is live at https://labticker.fly.dev from 956a39c in private owner-acceptance mode. One web and one worker Machine run against Neon, with saved monitors and simulated email. No phase is declared complete without its remaining external acceptance; this is not public pilot or beta enrollment.
+Updated 2026-11-02. MVP PR #1 merged at e7b765f after green CI and an explicitly authorized one-time owner admin merge. The full monitoring application is live at https://labticker.fly.dev from 956a39c in private owner-acceptance mode. One web and one worker Machine run against Neon, with saved monitors and simulated email. No phase is declared complete without its remaining external acceptance; this is not public pilot or beta enrollment.
 
 | Phase | Implemented and tested | Remaining acceptance |
 |---|---|---|
@@ -43,3 +43,9 @@ The private owner-acceptance stage strictly permits only the configured GitHub a
 Recent dashboard releases previously used import time, scrambling baseline history. Dashboard, app history and digest previews now order by publication date, fall back to first-seen time and resolve ties deterministically. Latest-per-app digest samples are globally ordered after selection. Scheduling/receipt eligibility and stored notes are unchanged; no schema migration is added.
 
 Website release notes and digest previews render pinned react-markdown/remark-gfm Markdown (headings, lists, tables, links and code). Raw HTML, unsafe URLs and automatic remote images are disabled. Relative links resolve upstream. Three SQL chronology regressions and two renderer/security tests bring the suite to 100. All typechecks/tests/builds pass; fictional local-browser acceptance passes formatting, inert HTML, zero external requests and mobile overflow. The live image remains 956a39c until the protected update runs.
+
+## Release-page visual redesign (pending deployment)
+
+PR #4 is merged on main (419de6e), but Fly still serves 956a39c. This explains the owner's continued plain-text notes: the merged Markdown renderer has not been deployed. The next protected rollout must include both that fix and this redesign.
+
+The site now uses a navy header, warm neutral canvas, white cards, blue actions/version tags, teal source status and amber advisories. Release cards separate title/date, upgrade labels, rendered notes and upstream links; digest previews share the same structure. Desktop and 390-pixel browser checks pass Markdown, no unsafe HTML/remote image requests and no horizontal overflow. Local fictional-user acceptance passes three monitors, saved settings, digest samples and access boundaries; all 100 tests and typechecks pass. Production build acceptance and protected rollout are tracked with the reviewable PR. No account, source, schema, email, analytics or advertising policy is changed.
