@@ -1,12 +1,13 @@
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkGemoji from 'remark-gemoji';
 
 /** Notes are data, never executable HTML. Relative links point upstream, not into LabTicker. */
 export function releaseNoteUrl(value:string,sourceUrl?:string):string|undefined{
  try{const url=new URL(value,sourceUrl);return url.protocol==='https:'&&!url.username&&!url.password?url.href:undefined;}catch{return undefined;}
 }
 export function ReleaseMarkdown({notes,sourceUrl}:{notes:string;sourceUrl?:string}){
- return <div className="release-excerpt release-markdown"><Markdown remarkPlugins={[remarkGfm]} skipHtml
+ return <div className="release-excerpt release-markdown"><Markdown remarkPlugins={[remarkGfm,remarkGemoji]} skipHtml
   urlTransform={(value,key)=>key==='href'?releaseNoteUrl(value,sourceUrl):undefined}
   components={{
    a:({href,children})=>href?<a href={href} rel="noreferrer noopener" className="text-link">{children}</a>:<span>{children}</span>,

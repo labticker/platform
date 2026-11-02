@@ -53,3 +53,7 @@ The site now uses a navy header, warm neutral canvas, white cards, blue actions/
 ## AI-led development policy (2026-11-02)
 
 At the owner's explicit request, required PR reviews were removed from main, production/infrastructure reviewer and timer rules were removed, and repository auto-merge was enabled. Readback confirms required checks/strict branches remain, no force pushes/deletions, and environment branch restrictions remain. Root AGENTS.md and its template grant standing authorization for trusted CI-green PR merges and routine existing-app runs, including tested additive migrations and Free-quota backups. New spending, destructive changes, public/privacy rollout, real-email and PMF/ads decisions remain separate. Deployment audit/backup defaults now support that standing policy, with no routine catalog reseed. See docs/AUTONOMOUS_DEVELOPMENT.md. No app deployment or new resource is needed for this policy update.
+
+## GitHub emoji shortcodes (pending deployment)
+
+The shared release/digest-preview Markdown renderer now includes pinned remark-gemoji 8.0.0 with the GitHub emoji catalogue. Recognized shortcodes such as :link: and :rocket: render as native Unicode; unknown codes, URL destinations, inline code and fenced code remain literal. Existing raw-HTML, unsafe-URL and remote-image restrictions remain. All 11 web tests, web typecheck and the production web build pass; full required CI runs before the autonomous merge/deployment. Stored upstream notes and digest delivery behavior are unchanged, with no new migration or feature activation.
