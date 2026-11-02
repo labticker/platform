@@ -1,3 +1,5 @@
+> Current update, verified 2026-11-02: deployment [41476528783](https://github.com/labticker/platform/actions/runs/41476528783) serves f4f2328f35c713fb40e3fe3bdf36fc01f68725c1 on both Machines, digest sha256:67353500b172768dcd27d492cd11b937771219db2d0a33845dc90ea6834c4486. Markdown and the light navy/white/blue/teal/amber redesign are live. The 100-test protected rollout and actual Markdown/date/palette/mobile/worker browser checks pass. Earlier deployment below is preserved as acceptance history and a compatible rollback reference.
+
 # Deployed monitoring MVP: private owner acceptance
 
 Verified 2026-11-01 UTC at https://labticker.fly.dev.
