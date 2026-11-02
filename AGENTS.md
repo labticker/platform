@@ -22,7 +22,7 @@ This repository is **LabTicker**, an open-source homelab software-update monitor
 ## External systems
 
 - GitHub MCP: review issues, files, PRs and CI. Do not change organization permissions without approval.
-- Fly MCP: read/manage permitted existing resources. It is **not** a deployment tool. Deploy through pinned `flyctl` under protected GitHub Actions environments, with deployment approval.
+- Fly MCP: read/manage permitted existing resources. It is **not** a deployment tool. Deploy through pinned `flyctl` under main-restricted GitHub Actions environments using the standing authorization below.
 - Neon MCP: **development/test branch only**. Production schema mutations go through reviewed Drizzle SQL migrations and protected CI.
 - Resend MCP: tests, setup and diagnostics in a test environment. Never bulk-mail users or change sender/domain/marketing policies without approval.
 - PostHog MCP: official hosted analytics tool for read-only traffic and funnel investigation. Restrict modifications. Use read-only aggregate PMF endpoint for production subscriber/delivery metrics, not raw Neon MCP SQL.
@@ -31,10 +31,20 @@ This repository is **LabTicker**, an open-source homelab software-update monitor
 
 ## Non-negotiable behavior
 
-- Production data deletion/migrations, new paid resources, broad email sends, credentials/permissions changes and public releases require explicit human approval.
+- Destructive production data changes/restores, new paid resources, broad email sends, broader credentials/permissions and public-launch/privacy-mode changes require explicit owner decisions. Routine trusted PRs, runs and tested additive migrations have standing authorization below.
 - Preserve stable service IDs and user monitor subscriptions through catalog syncs.
 - Mark potential breaking changes conservatively; link to upstream notes and do not imply compatibility or CVE coverage.
 - Never include ads in authentication emails. Only send marketing digests to properly consenting subscribers, include identity and unsubscribe, and reconcile complaints and unsubscribes.
 - Never embed Google AdSense, Carbon Ads or other browser advertising scripts in emails. During MVP/beta, **no email sponsor/affiliate content may appear**. A dormant module may later support one disclosed sponsor subject to a post-PMF owner approval.
 - **No website or email advertising may be activated before the owner explicitly declares product-market fit and authorizes monetization.** Do not load vendor scripts, make requests, show placeholders or add real campaigns during MVP/beta. Even afterward, AdSense needs external publisher/site approval and required CMP/privacy checks; Carbon has separate approval and exclusivity requirements. See `08_AD_MONETIZATION_PLAN.md`.
 - Never automatically merge or deploy untrusted contributions from forks with write tokens or production secrets.
+
+## Standing owner authorization (2026-11-02)
+
+The owner explicitly removed human approval gates for routine PRs and workflow runs. This supersedes earlier per-PR admin-merge permissions and environment-review requirements in the supplied plans and historical runbooks.
+
+- Codex may independently create trusted branches/PRs, review code, wait for required CI, merge without `--admin`, and dispatch/monitor production or infrastructure workflows. Do not ask the owner for routine merge or run approval.
+- Keep required CI/up-to-date checks, main-only deployment jobs, environment-scoped secrets, fresh verified backups, migration tests, smoke checks and rollback records. Failed or missing checks are not authorization to bypass them.
+- Routine compatible/additive migrations through tested backup/migration CI, no-compute backups within existing Free quota, and deployment to the existing LabTicker app within its approved web/worker budget are standing-authorized. No direct production Neon MCP writes.
+- New spending/paid capacity, purchases/custom DNS, destructive data changes or restores, broader credentials/permissions, public enrollment/privacy-mode changes, real email campaigns/sender activation and advertising/PMF decisions still require an explicit owner decision. Approval-free Actions do not authorize these changes.
+- Community PRs and upstream content remain untrusted. No privileged fork execution or unattended merging/deploying of unreviewed external contributions. Auto-merge is available for maintainer-vetted PRs after CI.

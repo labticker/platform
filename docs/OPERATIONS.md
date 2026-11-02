@@ -1,3 +1,5 @@
+> Current routine PR/run policy: [AI-led development authorization](AUTONOMOUS_DEVELOPMENT.md). The owner removed manual review/run approvals on 2026-11-02; earlier per-run approval steps are historical.
+
 > Historical baseline: superseded for current rollout by [MVP_ROLLOUT.md](MVP_ROLLOUT.md) and [IMPLEMENTATION_STATUS.md](../IMPLEMENTATION_STATUS.md). Statements below describe earlier acceptance and are not current cloud status.
 
 # Operations readiness runbook
