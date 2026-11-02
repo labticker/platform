@@ -12,7 +12,8 @@
     "./source-admin": "./src/source-admin.ts",
     "./operations": "./src/operations.ts",
     "./public-catalog": "./src/public-catalog.ts",
-    "./digests": "./src/digests.ts"
+    "./digests": "./src/digests.ts",
+    "./email-testing": "./src/email-testing.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -22,7 +23,8 @@
   },
   "dependencies": {
     "drizzle-orm": "0.45.4",
-    "postgres": "4.0.0"
+    "postgres": "4.0.0",
+    "@labticker/notifications": "workspace:*"
   },
   "devDependencies": {
     "drizzle-kit": "0.31.11",

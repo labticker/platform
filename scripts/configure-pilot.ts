@@ -1,5 +1,6 @@
 import {readFile,writeFile} from 'node:fs/promises';
 import {createEmailTransport} from '../packages/notifications/src/resend.js';
+import {createPrivateEmailTestTransport} from '../packages/notifications/src/email-testing.js';
 async function main(){
  const env=process.env,app=env.ACTUAL_APP??'',project=env.POSTHOG_PROJECT??'',host=env.POSTHOG_HOST??'',start=env.MEASUREMENT_START??'';
  const stage=env.ROLLOUT_STAGE??'owner-acceptance',ownerOnly=stage==='owner-acceptance';
@@ -9,6 +10,11 @@ async function main(){
  if(ownerOnly&&(live||env.EMAIL_AUTH_ENABLED==='true'))throw new Error('Owner acceptance cannot activate email');
  let text=(await readFile('fly.pilot.example.toml','utf8')).replaceAll('REPLACE_WITH_ASSIGNED_APP',app).replaceAll('REPLACE_WITH_OWNER_ACCESS',String(ownerOnly)).replaceAll('REPLACE_WITH_POSTHOG_PROJECT',project).replaceAll('REPLACE_WITH_POSTHOG_API_HOST',host==='https://us.i.posthog.com'?'https://us.posthog.com':'https://eu.posthog.com').replaceAll('REPLACE_WITH_MEASUREMENT_START',start);
  if(ownerOnly)text=text.replace(/^  POSTHOG_(?:PROJECT_ID|API_HOST|MEASUREMENT_START_DATE) = .*\r?\n/gm,'');
+ if(env.EMAIL_TEST_ENABLED==='true'){
+  if(!ownerOnly||live||env.EMAIL_AUTH_ENABLED==='true'||!env.RESEND_WEBHOOK_SECRET)throw new Error('Private email tests require owner-only mock mode and signed webhook configuration');
+  createPrivateEmailTestTransport({...env,APP_URL:`https://${app}.fly.dev`,OWNER_ACCEPTANCE_ONLY:'true',PUBLIC_EMAIL_ENABLED:'false'});
+  text=text.replace('  PUBLIC_EMAIL_ENABLED = "false"','  PUBLIC_EMAIL_ENABLED = "false"\n  EMAIL_TEST_ENABLED = "true"');
+ }else{text=text.replace('  PUBLIC_EMAIL_ENABLED = "false"','  PUBLIC_EMAIL_ENABLED = "false"\n  EMAIL_TEST_ENABLED = "false"');}
  if(live){
   const config=JSON.parse(env.EMAIL_ROLLOUT_APPROVAL_JSON??'');
   if(!env.LIVE_EMAIL_APPROVAL_REFERENCE||config.ownerApproval?.reference!==env.LIVE_EMAIL_APPROVAL_REFERENCE)throw new Error('Live email owner decision does not match deployment');

@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/core.ts", "./resend": "./src/resend.ts", "./placements": "./src/placements.ts" },
+  "exports": { ".": "./src/core.ts", "./resend": "./src/resend.ts", "./email-testing": "./src/email-testing.ts", "./placements": "./src/placements.ts" },
   "scripts": { "test": "vitest run", "typecheck": "tsc --noEmit" },
   "dependencies": { "resend": "6.37.0" },
   "devDependencies": { "typescript": "5.9.3", "vitest": "3.2.4" }

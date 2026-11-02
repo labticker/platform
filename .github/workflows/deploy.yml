@@ -48,6 +48,10 @@ on:
         description: Optional verified-sender magic links; GitHub OAuth remains available
         type: boolean
         default: false
+      email_test_enabled:
+        description: Owner-only real email tests with approved recipients; scheduled digests stay mock
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -95,6 +99,9 @@ jobs:
           MEASUREMENT_START: ${{ vars.POSTHOG_MEASUREMENT_START_DATE }}
           EMAIL_DELIVERY_MODE: ${{ inputs.email_delivery_mode }}
           EMAIL_AUTH_ENABLED: ${{ inputs.email_auth_enabled }}
+          EMAIL_TEST_ENABLED: ${{ inputs.email_test_enabled }}
+          EMAIL_TEST_APPROVAL_JSON: ${{ secrets.EMAIL_TEST_APPROVAL_JSON }}
+          RESEND_WEBHOOK_SECRET: ${{ secrets.RESEND_WEBHOOK_SECRET }}
           LIVE_EMAIL_APPROVAL_REFERENCE: ${{ inputs.live_email_approval_reference }}
           EMAIL_ROLLOUT_APPROVAL_JSON: ${{ secrets.EMAIL_ROLLOUT_APPROVAL_JSON }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
@@ -161,6 +168,8 @@ jobs:
           POSTHOG_QUERY_API_KEY: ${{ secrets.POSTHOG_QUERY_API_KEY }}
           EMAIL_DELIVERY_MODE: ${{ inputs.email_delivery_mode }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          EMAIL_TEST_ENABLED: ${{ inputs.email_test_enabled }}
+          EMAIL_TEST_APPROVAL_JSON: ${{ secrets.EMAIL_TEST_APPROVAL_JSON }}
           EMAIL_ROLLOUT_APPROVAL_JSON: ${{ secrets.EMAIL_ROLLOUT_APPROVAL_JSON }}
           RESEND_WEBHOOK_SECRET: ${{ secrets.RESEND_WEBHOOK_SECRET }}
         run: pnpm exec tsx scripts/stage-pilot-secrets.ts
@@ -188,6 +197,7 @@ jobs:
         env:
           FLY_APP: ${{ inputs.app }}
           EMAIL_DELIVERY_MODE: ${{ inputs.email_delivery_mode }}
+          EMAIL_TEST_ENABLED: ${{ inputs.email_test_enabled }}
           ROLLOUT_STAGE: ${{ inputs.rollout_stage }}
         run: pnpm exec tsx scripts/smoke-pilot.ts
       - name: Record deployment identity

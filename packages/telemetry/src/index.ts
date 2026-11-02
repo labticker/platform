@@ -38,6 +38,22 @@ export async function processResendEvent(db:PgDatabase<PgQueryResultHKT,typeof s
     }
     const [digest]=await tx.select().from(schema.digests).where(eq(schema.digests.resendId,event.emailId));
     if(!digest){
+      const [test]=await tx.select({id:schema.emailTestMessages.id,userId:schema.emailTestMessages.userId}).from(schema.emailTestMessages).where(eq(schema.emailTestMessages.providerId,event.emailId)).limit(1);
+      if(test){
+        // Test delivery has its own ledger and never creates digest receipts or PMF engagement.
+        if(event.type==='email.bounced'||event.type==='email.complained'){
+          await tx.select({id:schema.users.id}).from(schema.users).where(eq(schema.users.id,test.userId)).for('update');
+          const changes=event.type==='email.bounced'?{bouncedAt:sql`least(${schema.emailTestMessages.bouncedAt}, ${event.occurredAt})`}:{complainedAt:sql`least(${schema.emailTestMessages.complainedAt}, ${event.occurredAt})`};
+          await tx.update(schema.emailTestMessages).set(changes).where(eq(schema.emailTestMessages.id,test.id));
+          await tx.update(schema.users).set({suppressedAt:sql`coalesce(${schema.users.suppressedAt}, ${now})`}).where(eq(schema.users.id,test.userId));
+          await tx.update(schema.preferences).set({enabled:false,nextDueAt:null}).where(eq(schema.preferences.userId,test.userId));
+          await tx.update(schema.emailConsents).set({withdrawnAt:now}).where(and(eq(schema.emailConsents.userId,test.userId),eq(schema.emailConsents.consentType,'digest'),isNull(schema.emailConsents.withdrawnAt)));
+          await tx.update(schema.emailTestMessages).set({status:'skipped',leaseToken:null,claimUntil:null,nextAttemptAt:null}).where(and(eq(schema.emailTestMessages.userId,test.userId),inArray(schema.emailTestMessages.status,['pending','claimed'])));
+          await recordAccountState(tx,test.userId,event.type==='email.bounced'?'test_email_bounced':'test_email_complained',now);
+        }
+        if(event.type==='email.delivered')await tx.update(schema.emailTestMessages).set({deliveredAt:sql`least(${schema.emailTestMessages.deliveredAt}, ${event.occurredAt})`}).where(eq(schema.emailTestMessages.id,test.id));
+        await tx.update(schema.resendWebhookEvents).set({processingStatus:'processed',processedAt:now}).where(eq(schema.resendWebhookEvents.id,record.id));return 'processed';
+      }
       const [authentication]=await tx.select({id:schema.authEmailMessages.providerId}).from(schema.authEmailMessages).where(eq(schema.authEmailMessages.providerId,event.emailId)).limit(1);
       if(!authentication)throw new RetryableWebhook('Message acknowledgement not yet available');
       await tx.update(schema.resendWebhookEvents).set({processingStatus:'ignored',processedAt:now}).where(eq(schema.resendWebhookEvents.id,record.id));return 'ignored';

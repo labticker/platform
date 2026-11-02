@@ -150,6 +150,9 @@ importers:
 
   packages/database:
     dependencies:
+      '@labticker/notifications':
+        specifier: workspace:*
+        version: link:../notifications
       drizzle-orm:
         specifier: 0.45.4
         version: 0.45.4(@electric-sql/pglite@0.5.13)(postgres@4.0.0)

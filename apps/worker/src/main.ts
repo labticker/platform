@@ -7,6 +7,8 @@ import {materializeDaily,materializeSourceSnapshot,fetchTrafficAggregates,materi
 import {runWorkerJob} from '@labticker/database/operations';
 import {appOrigin} from '@labticker/notifications';
 import {createEmailTransport} from '@labticker/notifications/resend';
+import {createPrivateEmailTestTransport} from '@labticker/notifications/email-testing';
+import {sendOneEmailTest} from './email-testing.js';
 import {prepareDueDigest,sendOneDigest,type DigestQueueConfig} from './digests.js';
 import {workerTickInterval} from './runtime-policy.js';
 import {pruneOperationalData} from './retention.js';
@@ -18,6 +20,7 @@ async function main(){
  if(mode!=='catalog-poll'&&mode!=='mock-pilot'&&mode!=='digest-pilot') throw new Error('Worker requires an explicit supported mode');
  const tickInterval=workerTickInterval(process.env);
  const transport=createEmailTransport(process.env),gateway=transport.gateway;
+ const testGateway=process.env.EMAIL_TEST_ENABLED==='true'?createPrivateEmailTestTransport(process.env):undefined;
  if(mode==='mock-pilot'&&transport.mode!=='mock')throw new Error('Mock pilot cannot select live transport');
  const revision=process.env.CATALOG_GIT_SHA??'';
  if(!/^[a-f0-9]{7,64}$/.test(revision)) throw new Error('CATALOG_GIT_SHA is required');
@@ -37,6 +40,10 @@ async function main(){
   try{
    await runWorkerJob(db,'worker-tick',async()=>{
    const counts={catalogEntries:0,polledSources:0,failedSources:0,insertedReleases:0,preparedDigests:0,acceptedDigests:0,skippedDigests:0,retriedDigests:0,failedDigests:0,reportDates:0};
+   if(testGateway)for(let index=0;running&&index<5;index++){
+    const status=await sendOneEmailTest(db,testGateway,process.env,new Date());if(status==='idle')break;
+    console.log(JSON.stringify({service:'labticker-worker',job:'private-email-test',status}));
+   }
    // Drain durable work before potentially slow source polling/report refreshes.
    if(digestConfig){
     for(let index=0;running&&index<25;index++){const prepared=await prepareDueDigest(db,digestConfig,new Date());if(prepared.status==='idle')break;if(prepared.status==='queued')counts.preparedDigests++;else counts.skippedDigests++;console.log(JSON.stringify({service:'labticker-worker',job:'digest-prepare',status:prepared.status,items:prepared.items}));}

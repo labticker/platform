@@ -67,3 +67,25 @@ test('signed webhook processing dedupes and retains earliest delivery, gates tra
   assert.equal(await processResendEvent(db,verifyResendWebhook(racing.payload,racing.headers,secret)),'processed');
  }finally{await client.close();}
 });
+
+test('private test delivery uses its own ledger and suppresses bounces without counting as a digest',async()=>{
+ const client=new PGlite(),db=drizzle(client,{schema});try{
+  await migrate(db,{migrationsFolder:'../../drizzle'});
+  const now=new Date(),[user]=await db.insert(schema.users).values({email:'fixture@example.com',role:'admin',emailVerified:now}).returning();assert.ok(user);
+  await db.insert(schema.preferences).values({userId:user.id,enabled:true,nextDueAt:now});
+  await db.insert(schema.emailConsents).values({userId:user.id,consentType:'digest',policyVersion:'fixture',source:'fixture',consentedAt:now});
+  const [testMessage]=await db.insert(schema.emailTestMessages).values({userId:user.id,requestId:randomUUID(),payload:{fixture:true},providerId:'private-test-message',status:'sent',sentAt:now}).returning();assert.ok(testMessage);
+  await db.insert(schema.emailTestMessages).values({userId:user.id,requestId:randomUUID(),payload:{fixture:true},status:'pending'});
+  const delivery=signed('email.delivered','private-test-message');const event=verifyResendWebhook(delivery.payload,delivery.headers,secret);
+  assert.equal(await processResendEvent(db,event),'processed');assert.equal(await processResendEvent(db,event),'duplicate');
+  assert.ok((await db.select().from(schema.emailTestMessages).where(eq(schema.emailTestMessages.id,testMessage.id)))[0]?.deliveredAt);
+  const open=signed('email.opened','private-test-message');assert.equal(await processResendEvent(db,verifyResendWebhook(open.payload,open.headers,secret)),'processed');
+  assert.equal((await db.select().from(schema.digestMessageEngagement)).length,0);assert.equal((await db.select().from(schema.deliveryReceipts)).length,0);assert.equal((await db.select().from(schema.digests)).length,0);
+  const bounce=signed('email.bounced','private-test-message');await processResendEvent(db,verifyResendWebhook(bounce.payload,bounce.headers,secret));
+  assert.ok((await db.select().from(schema.users))[0]?.suppressedAt);assert.equal((await db.select().from(schema.preferences))[0]?.enabled,false);
+  assert.ok((await db.select().from(schema.emailConsents))[0]?.withdrawnAt);
+  assert.ok((await db.select().from(schema.emailTestMessages).where(eq(schema.emailTestMessages.id,testMessage.id)))[0]?.bouncedAt);
+  assert.equal((await db.select().from(schema.emailTestMessages)).filter(row=>row.status==='pending').length,0);
+  assert.equal((await db.select().from(schema.accountStateEvents))[0]?.eventType,'test_email_bounced');
+ }finally{await client.close();}
+});
