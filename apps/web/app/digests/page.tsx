@@ -1,4 +1,8 @@
 import {ReleaseMarkdown} from '../release-markdown';
+import {privateEmailTestVisible} from '../../lib/email-testing';
+import {EmailTestPanel} from './email-test-panel';
+import {sendEmailTest} from './actions';
+import {emailTestingAllowed,readEmailTestHistory} from '@labticker/database/email-testing';
 import {SiteHeader,SiteFooter} from '../site-chrome';
 import {redirect} from 'next/navigation';
 import {getCurrentUser} from '../../lib/auth';
@@ -6,17 +10,21 @@ import {getDatabase} from '@labticker/database/runtime';
 import {readUserDigests,type DigestPreviewRelease} from '@labticker/database/digests';
 export const dynamic='force-dynamic';
 function Release({release}:{release:DigestPreviewRelease}){return <article className="release-card"><header className="release-card-header"><div className="release-heading"><h3>{release.appName}</h3><span className="version-tag">{release.version}</span></div><p>{release.title}</p>{release.publishedAt&&<p className="muted release-meta">Published {new Date(release.publishedAt).toLocaleDateString('en-CA',{timeZone:'UTC'})}</p>}</header>{release.warnings.length>0&&<aside className="release-warnings" aria-label="Upgrade advisories"><strong>Before you upgrade</strong><div className="release-warning-labels">{release.warnings.map((warning,index)=><span key={index} className="badge warning">{warning}</span>)}</div><p className="fine-print">Advisory labels; review the upstream instructions.</p></aside>}<p className="release-notes-label">Release notes</p><ReleaseMarkdown notes={release.notes} sourceUrl={release.url??undefined}/>{release.url&&<footer className="release-card-footer"><a className="text-link" href={release.url} rel="noreferrer">Read the official release notes ↗</a></footer>}</article>;}
-export default async function Digests({searchParams}:{searchParams:Promise<{view?:string}>}){
+export default async function Digests({searchParams}:{searchParams:Promise<{view?:string;emailTest?:string}>}){
  const user=await getCurrentUser();if(!user)redirect('/auth/sign-in');
- const view=(await searchParams).view==='sample'?'sample':'upcoming';
+ const query=await searchParams;
+ const view=query.view==='sample'?'sample':'upcoming';
+ const canTestEmail=privateEmailTestVisible(process.env,user)&&emailTestingAllowed(process.env,user);
+ const testHistory=canTestEmail?await readEmailTestHistory(getDatabase(),user.id).catch(()=>null):undefined;
  const data=await readUserDigests(getDatabase(),user.id,process.env.EMAIL_DELIVERY_MODE==='resend'?'resend':'mock').catch(()=>null);
  if(!data)return <main><h1>Your digests are temporarily unavailable</h1><a href="/dashboard">Back to your monitors</a></main>;
  const releases=view==='sample'?data.sample:data.upcoming;
  return <main><SiteHeader signedIn/><div className="page-heading"><h1>Your release digests</h1><p>Updates for the software you monitor, together in one place.</p></div><nav><a href="/digests">Upcoming updates</a> · <a href="/digests?view=sample">Sample digest</a> · <a href="/settings">Email preferences</a></nav>
- {data.deliveryMode==='mock'&&<p className="notice">Test delivery mode: simulated digests stay in your account history. No email is sent.</p>}
+ {data.deliveryMode==='mock'&&<p className="notice">Scheduled digest test mode: simulated digests stay in your account history. Scheduled digests do not send email.</p>}
+ {canTestEmail&&<EmailTestPanel action={sendEmailTest} status={query.emailTest} history={testHistory}/>}
  <section className="panel"><h2>{view==='sample'?'Sample digest':'Upcoming updates'}</h2><p>{view==='sample'?'A preview of stored releases from your selected applications. Samples can include older releases and are never automatically queued or marked delivered.':'New releases discovered after you started monitoring, excluding updates already accepted in this delivery mode.'}</p>
  {!data.selectedApplications?<p><a href="/dashboard">Choose the applications in your homelab</a> to see your digest.</p>:releases.length?releases.map((release,index)=><Release key={index} release={release}/>):<p>{view==='sample'?'No release history is available for your selected applications yet.':'You are caught up. New updates will appear here when they are discovered.'}</p>}
  {releases.length>=data.previewLimit&&<p className="muted">Showing the first {data.previewLimit} updates.</p>}<p className="muted">Previewing never sends email or changes your consent.</p>
  {!data.eligibleToSchedule&&<p>Your digest schedule is paused or has no active consent. <a href="/settings">Review preferences</a>.</p>}{data.preferences?.nextDueAt&&data.eligibleToSchedule&&<p>Next scheduled digest: {new Date(data.preferences.nextDueAt).toLocaleString('en-CA',{timeZone:data.preferences.timezone})} ({data.preferences.timezone}).</p>}</section>
- <section className="panel"><h2>Digest history</h2>{!data.history.length?<p>Your digests will appear after their scheduled time. In test mode, nothing is emailed.</p>:data.history.map(digest=><details key={digest.id}><summary>{digest.mode==='mock'?'Simulated digest':'Email digest'} · {digest.status==='sent'?(digest.mode==='mock'?'simulated acceptance':digest.deliveredAt?'delivered':'accepted by email provider'):digest.status} · {digest.scheduledAt?new Date(digest.scheduledAt).toLocaleDateString('en-CA',{timeZone:'UTC'}):'Unknown date'}</summary>{digest.mode==='mock'&&<p className="muted">This was a simulation, not an email delivery.</p>}{digest.items.map((release,index)=><Release key={index} release={release}/>)}</details>)}</section><a href="/dashboard">Back to monitors</a><SiteFooter/></main>;
+ <section className="panel"><h2>Digest history</h2>{!data.history.length?<p>Your scheduled digests will appear after their scheduled time. In test mode, scheduled digests are simulated.</p>:data.history.map(digest=><details key={digest.id}><summary>{digest.mode==='mock'?'Simulated digest':'Email digest'} · {digest.status==='sent'?(digest.mode==='mock'?'simulated acceptance':digest.deliveredAt?'delivered':'accepted by email provider'):digest.status} · {digest.scheduledAt?new Date(digest.scheduledAt).toLocaleDateString('en-CA',{timeZone:'UTC'}):'Unknown date'}</summary>{digest.mode==='mock'&&<p className="muted">This was a simulation, not an email delivery.</p>}{digest.items.map((release,index)=><Release key={index} release={release}/>)}</details>)}</section><a href="/dashboard">Back to monitors</a><SiteFooter/></main>;
 }

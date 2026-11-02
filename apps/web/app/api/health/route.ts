@@ -3,13 +3,13 @@ import {jobRuns} from '@labticker/database/schema';
 import {eq,desc} from 'drizzle-orm';
 import {githubOAuthAllowed,emailAuthAllowed} from '../../../lib/auth-policy';
 export const dynamic='force-dynamic';
-type Health={service:string;status:string;emailDeliveryMode:string;workerReady:boolean;databaseReady:boolean;analyticsEnabled:boolean;signInEnabled:boolean;ownerAccessOnly:boolean};
+type Health={service:string;status:string;emailDeliveryMode:string;workerReady:boolean;databaseReady:boolean;analyticsEnabled:boolean;signInEnabled:boolean;ownerAccessOnly:boolean;privateEmailTestsEnabled:boolean};
 let cached:{value:Health;expires:number}|undefined;
 let pending:Promise<Health>|undefined;
 async function inspect():Promise<Health>{
  const signInEnabled=githubOAuthAllowed(process.env)||emailAuthAllowed(process.env),ownerAccessOnly=process.env.OWNER_ACCEPTANCE_ONLY==='true';
  const analyticsEnabled=process.env.ANALYTICS_PROVIDER==='posthog'&&!!process.env.NEXT_PUBLIC_POSTHOG_KEY&&['https://us.i.posthog.com','https://eu.i.posthog.com'].includes(process.env.NEXT_PUBLIC_POSTHOG_HOST??'');
- const base={service:'LabTicker',status:'preview',emailDeliveryMode:process.env.EMAIL_DELIVERY_MODE==='resend'?'resend':'mock',workerReady:false,databaseReady:false,analyticsEnabled,signInEnabled,ownerAccessOnly};
+ const base={service:'LabTicker',status:'preview',emailDeliveryMode:process.env.EMAIL_DELIVERY_MODE==='resend'?'resend':'mock',workerReady:false,databaseReady:false,analyticsEnabled,signInEnabled,ownerAccessOnly,privateEmailTestsEnabled:process.env.EMAIL_TEST_ENABLED==='true'&&ownerAccessOnly};
  if(!signInEnabled)return base;
  try{
   const [tick]=await getDatabase().select({startedAt:jobRuns.startedAt,status:jobRuns.status}).from(jobRuns).where(eq(jobRuns.jobName,'worker-tick')).orderBy(desc(jobRuns.startedAt)).limit(1);

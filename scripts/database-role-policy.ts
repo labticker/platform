@@ -4,13 +4,15 @@ type Executor=Pick<Sql,'unsafe'>;
 const identifier=(value:string)=>'"'+value.replaceAll('"','""')+'"';
 const grants:Record<typeof runtimeRoles[number],Record<string,readonly string[]>>={
  labticker_web:{
+  'SELECT, INSERT, UPDATE, DELETE':['email_test_messages','auth_accounts','auth_sessions','verification_tokens','preferences','subscriptions'],
   'SELECT, INSERT, UPDATE':['users','email_consents','resend_webhook_events','digest_message_engagement'],
   'SELECT, INSERT':['account_state_events','catalog_changes','auth_email_messages'],
-  'SELECT, INSERT, UPDATE, DELETE':['auth_accounts','auth_sessions','verification_tokens','preferences','subscriptions'],
+
   'SELECT, UPDATE':['digests','release_sources'],
   SELECT:['applications','app_aliases','app_source_records','releases','digest_items','delivery_receipts','job_runs'],
  },
  labticker_worker:{
+  'SELECT, UPDATE, DELETE':['email_test_messages'],
   'SELECT, UPDATE':['users','preferences'],
   'SELECT, INSERT, UPDATE':['applications','app_aliases','app_source_records','release_sources','releases','digests','digest_message_engagement','analytics_daily_aggregates','analytics_report_runs','job_runs'],
   'SELECT, INSERT':['catalog_changes','digest_items','delivery_receipts','account_state_events'],

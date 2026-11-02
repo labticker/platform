@@ -61,6 +61,7 @@ export async function deleteAccount(db:Database,userId:string,now=new Date()){
  await db.transaction(async tx=>{
   const [user]=await tx.select().from(s.users).where(eq(s.users.id,userId)).for('update');if(!user)return;
   await tx.update(s.users).set({email:`${userId}@deleted.invalid`,name:null,image:null,role:'user',deletedAt:now,suppressedAt:now}).where(eq(s.users.id,userId));
+  await tx.delete(s.emailTestMessages).where(eq(s.emailTestMessages.userId,userId));
   await tx.delete(s.authSessions).where(eq(s.authSessions.userId,userId));
   await tx.delete(s.authAccounts).where(eq(s.authAccounts.userId,userId));
   await tx.delete(s.verificationTokens).where(eq(s.verificationTokens.identifier,user.email));
@@ -72,6 +73,3 @@ export async function deleteAccount(db:Database,userId:string,now=new Date()){
   await recordAccountState(tx,userId,'account_deleted',now);
  });
 }
-
-
-

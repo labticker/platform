@@ -17,6 +17,7 @@ export interface ResendDigestApproval {
  readonly authenticationDomain?:string;
  readonly trackingReview?:{readonly reference:string;readonly authOpenTracking:false;readonly authClickTracking:false;readonly digestOpenTracking:false;readonly digestClickTracking:false};
  readonly appUrl?:string;
+ readonly replyTo?:string;
  readonly requestTimeoutMs?:number;
 }
 export interface ResendSendClient {
@@ -64,8 +65,10 @@ export class ResendDigestGateway implements EmailGateway{
  readonly approval:ApprovedResendPolicy;
  private readonly sender:{from:string;origin:string};
  private readonly timeoutMs:number;
+ private readonly replyTo?:string;
  constructor(config:ResendDigestApproval,private readonly client:ResendSendClient,now=new Date()){
   this.sender=approve(config,now);
+  if(config.replyTo){mailbox(config.replyTo);this.replyTo=config.replyTo;}
   this.timeoutMs=config.requestTimeoutMs??10000;
   if(!Number.isSafeInteger(this.timeoutMs)||this.timeoutMs<100||this.timeoutMs>30000)throw new Error('Invalid bounded email request timeout');
   this.approval=Object.freeze({}) as ApprovedResendPolicy;
@@ -74,7 +77,7 @@ export class ResendDigestGateway implements EmailGateway{
  async send(message:EmailMessage,idempotencyKey:string):Promise<{id:string}>{
   validateMessage(message,this.sender.origin,idempotencyKey);
   let response:Awaited<ReturnType<ResendSendClient['emails']['send']>>;
-  try{response=await this.client.emails.send({from:this.sender.from,to:[message.to],subject:message.subject,html:message.html,text:message.text,headers:{...message.headers}},{idempotencyKey,signal:AbortSignal.timeout(this.timeoutMs)});}
+  try{response=await this.client.emails.send({from:this.sender.from,to:[message.to],...(this.replyTo?{replyTo:this.replyTo}:{}),subject:message.subject,html:message.html,text:message.text,headers:{...message.headers}},{idempotencyKey,signal:AbortSignal.timeout(this.timeoutMs)});}
   catch{throw new EmailDeliveryError('ambiguous');}
   if(response.error){
    const {statusCode,name}=response.error;
