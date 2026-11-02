@@ -1,3 +1,5 @@
+> Historical rollback reference. The current deployment is documented in [DEPLOYED_MVP.md](DEPLOYED_MVP.md).
+
 # Deployed catalog preview
 
 Verified 2026-11-01 UTC at https://labticker.fly.dev.
