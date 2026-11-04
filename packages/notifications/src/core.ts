@@ -1,5 +1,6 @@
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { isIP } from 'node:net';
+import {renderEmailReleaseNotes} from './release-notes.js';
 
 export function appOrigin(value: string): string {
   const url = new URL(value);
@@ -114,8 +115,9 @@ export function composeDigest(input: { to:string; releases:readonly DigestReleas
   assertUnsubscribeToken(input.unsubscribeToken);
   const unsubscribe = appLink(input.origin,'/unsubscribe',input.unsubscribeToken);
   const settings = appLink(input.origin,'/settings');
-  const textItems = input.releases.map(r => `${r.appName} — ${r.version}: ${r.title}\n${r.warnings.join('; ')}\n${r.notes.slice(0,600)}\n${releaseLink(r.releaseUrl)}`).join('\n\n');
-  const htmlItems = input.releases.map(r => `<article><h2>${escape(r.appName)} — ${escape(r.version)}</h2><p>${escape(r.title)}</p><p>${escape(r.warnings.join('; '))}</p><p>${escape(r.notes.slice(0,600))}</p><a href="${escape(releaseLink(r.releaseUrl))}">View upstream release notes</a></article>`).join('');
+  const releases=input.releases.map(release=>({release,notes:renderEmailReleaseNotes(release.notes.slice(0,600))}));
+  const textItems = releases.map(({release:r,notes}) => `${r.appName} — ${r.version}: ${r.title}\n${r.warnings.join('; ')}\n${notes.text}\n${releaseLink(r.releaseUrl)}`).join('\n\n');
+  const htmlItems = releases.map(({release:r,notes}) => `<article><h2>${escape(r.appName)} — ${escape(r.version)}</h2><p>${escape(r.title)}</p><p>${escape(r.warnings.join('; '))}</p><div>${notes.html}</div><a href="${escape(releaseLink(r.releaseUrl))}">View upstream release notes</a></article>`).join('');
   return { to:input.to, subject:`Your LabTicker updates — ${input.releases.length} new releases`,
     text:`LabTicker\nUpdate your homelab. Without the homework.\n\n${textItems}\n\nLabels are advisory; review upstream instructions.\nManage preferences: ${settings}\nUnsubscribe: ${unsubscribe}\n${input.senderIdentity}\n${input.senderContact}`,
     html:`<!doctype html><html><body><h1>LabTicker</h1><p>Update your homelab. Without the homework.</p>${htmlItems}<p>Labels are advisory; review upstream instructions.</p><footer><a href="${escape(settings)}">Manage preferences</a> | <a href="${escape(unsubscribe)}">Unsubscribe</a><p>${escape(input.senderIdentity)}<br>${escape(input.senderContact)}</p></footer></body></html>`,
