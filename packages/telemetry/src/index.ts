@@ -43,15 +43,15 @@ export async function processResendEvent(db:PgDatabase<PgQueryResultHKT,typeof s
         // Test delivery has its own ledger and never creates digest receipts or PMF engagement.
         if(event.type==='email.bounced'||event.type==='email.complained'){
           await tx.select({id:schema.users.id}).from(schema.users).where(eq(schema.users.id,test.userId)).for('update');
-          const changes=event.type==='email.bounced'?{bouncedAt:sql`least(${schema.emailTestMessages.bouncedAt}, ${event.occurredAt})`}:{complainedAt:sql`least(${schema.emailTestMessages.complainedAt}, ${event.occurredAt})`};
+          const changes=event.type==='email.bounced'?{bouncedAt:sql`least(${schema.emailTestMessages.bouncedAt}, ${event.occurredAt.toISOString()}::timestamptz)`}:{complainedAt:sql`least(${schema.emailTestMessages.complainedAt}, ${event.occurredAt.toISOString()}::timestamptz)`};
           await tx.update(schema.emailTestMessages).set(changes).where(eq(schema.emailTestMessages.id,test.id));
-          await tx.update(schema.users).set({suppressedAt:sql`coalesce(${schema.users.suppressedAt}, ${now})`}).where(eq(schema.users.id,test.userId));
+          await tx.update(schema.users).set({suppressedAt:sql`coalesce(${schema.users.suppressedAt}, ${now.toISOString()}::timestamptz)`}).where(eq(schema.users.id,test.userId));
           await tx.update(schema.preferences).set({enabled:false,nextDueAt:null}).where(eq(schema.preferences.userId,test.userId));
           await tx.update(schema.emailConsents).set({withdrawnAt:now}).where(and(eq(schema.emailConsents.userId,test.userId),eq(schema.emailConsents.consentType,'digest'),isNull(schema.emailConsents.withdrawnAt)));
           await tx.update(schema.emailTestMessages).set({status:'skipped',leaseToken:null,claimUntil:null,nextAttemptAt:null}).where(and(eq(schema.emailTestMessages.userId,test.userId),inArray(schema.emailTestMessages.status,['pending','claimed'])));
           await recordAccountState(tx,test.userId,event.type==='email.bounced'?'test_email_bounced':'test_email_complained',now);
         }
-        if(event.type==='email.delivered')await tx.update(schema.emailTestMessages).set({deliveredAt:sql`least(${schema.emailTestMessages.deliveredAt}, ${event.occurredAt})`}).where(eq(schema.emailTestMessages.id,test.id));
+        if(event.type==='email.delivered')await tx.update(schema.emailTestMessages).set({deliveredAt:sql`least(${schema.emailTestMessages.deliveredAt}, ${event.occurredAt.toISOString()}::timestamptz)`}).where(eq(schema.emailTestMessages.id,test.id));
         await tx.update(schema.resendWebhookEvents).set({processingStatus:'processed',processedAt:now}).where(eq(schema.resendWebhookEvents.id,record.id));return 'processed';
       }
       const [authentication]=await tx.select({id:schema.authEmailMessages.providerId}).from(schema.authEmailMessages).where(eq(schema.authEmailMessages.providerId,event.emailId)).limit(1);
@@ -65,7 +65,7 @@ export async function processResendEvent(db:PgDatabase<PgQueryResultHKT,typeof s
     await tx.insert(schema.digestMessageEngagement).values({digestId:digest.id}).onConflictDoNothing();
     const [engagement]=await tx.select().from(schema.digestMessageEngagement).where(eq(schema.digestMessageEngagement.digestId,digest.id));
     if(!engagement) throw new RetryableWebhook('Engagement unavailable');
-    const first=(column:typeof schema.digestMessageEngagement.deliveredAt)=>sql`least(${column}, ${event.occurredAt})`;
+    const first=(column:typeof schema.digestMessageEngagement.deliveredAt)=>sql`least(${column}, ${event.occurredAt.toISOString()}::timestamptz)`;
     if(event.type==='email.delivered') await tx.update(schema.digestMessageEngagement).set({deliveredAt:first(schema.digestMessageEngagement.deliveredAt)}).where(eq(schema.digestMessageEngagement.digestId,digest.id));
     if(event.type==='email.opened'&&engagement.trackedOpenEnabled) await tx.update(schema.digestMessageEngagement).set({firstOpenedAt:first(schema.digestMessageEngagement.firstOpenedAt)}).where(eq(schema.digestMessageEngagement.digestId,digest.id));
     if(event.type==='email.clicked'&&engagement.trackedClickEnabled) await tx.update(schema.digestMessageEngagement).set({firstClickedAt:first(schema.digestMessageEngagement.firstClickedAt)}).where(eq(schema.digestMessageEngagement.digestId,digest.id));
@@ -73,7 +73,7 @@ export async function processResendEvent(db:PgDatabase<PgQueryResultHKT,typeof s
       await tx.select({id:schema.users.id}).from(schema.users).where(eq(schema.users.id,digest.userId)).for('update');
       const changes=event.type==='email.bounced'?{bouncedAt:first(schema.digestMessageEngagement.bouncedAt)}:{complaintAt:first(schema.digestMessageEngagement.complaintAt)};
       await tx.update(schema.digestMessageEngagement).set(changes).where(eq(schema.digestMessageEngagement.digestId,digest.id));
-      await tx.update(schema.users).set({suppressedAt:sql`coalesce(${schema.users.suppressedAt}, ${now})`}).where(eq(schema.users.id,digest.userId));
+      await tx.update(schema.users).set({suppressedAt:sql`coalesce(${schema.users.suppressedAt}, ${now.toISOString()}::timestamptz)`}).where(eq(schema.users.id,digest.userId));
       await tx.update(schema.preferences).set({enabled:false,nextDueAt:null}).where(eq(schema.preferences.userId,digest.userId));
       await tx.update(schema.digests).set({status:sql`case when ${schema.digests.firstAttemptAt} is null then 'skipped' else 'failed' end`,leaseToken:null,claimUntil:null,nextAttemptAt:null,lastError:'Provider suppression'}).where(and(eq(schema.digests.userId,digest.userId),inArray(schema.digests.status,['pending','claimed'])));
       await tx.update(schema.emailConsents).set({withdrawnAt:now}).where(and(eq(schema.emailConsents.userId,digest.userId),eq(schema.emailConsents.consentType,'digest'),isNull(schema.emailConsents.withdrawnAt)));
