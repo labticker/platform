@@ -18,6 +18,7 @@ import {randomUUID} from 'node:crypto';
 import {enqueueEmailTest,sendOneEmailTest} from '../packages/database/src/email-testing.js';
 import {emailTestFixture} from '../packages/database/test/email-testing-fixture.js';
 import {createPrivateEmailTestTransport} from '../packages/notifications/src/email-testing.js';
+import {processResendEvent} from '../packages/telemetry/src/index.js';
 if(process.env.LOCAL_DB_FIXTURE_ENABLED!=='true'||process.env.NODE_ENV==='production')throw new Error('Disposable local role fixture opt-in required');
 const connect=(role:string)=>postgres(`postgresql://${role}@127.0.0.1:55435/postgres`,{max:1,prepare:false,connect_timeout:5});
 const owner=connect('postgres'),web=connect('labticker_web'),worker=connect('labticker_worker'),reports=connect('labticker_reports');
@@ -68,6 +69,17 @@ try{
  const fakeTransport=createPrivateEmailTestTransport(testEnv,{emails:{async send(){sdkCalls++;return {data:{id:'role-test-provider'},error:null};}}});
  assert.equal(await sendOneEmailTest(workerDb,fakeTransport,testEnv,now,{userId:user.id,requestId}),'sent');
  assert.equal(sdkCalls,1);
+ // Exercise webhook timestamp expressions through the production postgres-js
+ // driver and scoped web role: PGlite alone does not catch parameter encoding.
+ const event={id:'fixture-test-delivered',type:'email.delivered',emailId:'role-test-provider',occurredAt:now};
+ assert.equal(await processResendEvent(webDb,event,now),'processed');
+ assert.equal(await processResendEvent(webDb,event,now),'duplicate');
+ const earlier=new Date(now.getTime()-1000);
+ assert.equal(await processResendEvent(webDb,{...event,id:'fixture-test-earlier',occurredAt:earlier},now),'processed');
+ const [testMessage]=await webDb.select({deliveredAt:schema.emailTestMessages.deliveredAt}).from(schema.emailTestMessages).where(eq(schema.emailTestMessages.providerId,'role-test-provider'));
+ assert.equal(testMessage?.deliveredAt?.toISOString(),earlier.toISOString());
+ for(const type of ['email.bounced','email.complained'])assert.equal(await processResendEvent(webDb,{...event,id:`fixture-test-${type}`,type},now),'processed');
+ const [suppressed]=await webDb.select({at:schema.users.suppressedAt}).from(schema.users).where(eq(schema.users.id,user.id));assert.ok(suppressed?.at);
  assert.equal((await readUserDigests(webDb,user.id)).history.length,1,'Private tests must not appear as scheduled digests');
  const sourceMap=new Map(registry.map(record=>[record.definition.slug,new Set(record.definition.releaseSources.flatMap(source=>source.kind==='github-releases'?[source.repository.toLowerCase()]:[]))]));
  await setSourceEnabled(webDb,user.id,feed.id,false,sourceMap);await setSourceEnabled(webDb,user.id,feed.id,true,sourceMap);
