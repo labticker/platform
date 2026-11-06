@@ -12,6 +12,7 @@ export class EmailDeliveryError extends Error{
 export interface ResendDigestApproval {
  readonly mode?:'mock'|'resend';
  readonly publicEmailEnabled?:boolean;
+ readonly audience?:{readonly kind:'owner-only';readonly recipients:readonly string[]};
  readonly ownerApproval?:{readonly decision:'live-email-approved';readonly reference:string};
  readonly sender?:{readonly address:string;readonly domain:string;readonly status:'verified';readonly evidenceReference:string;readonly checkedAt:string};
  readonly authenticationDomain?:string;
@@ -33,9 +34,17 @@ function mailbox(value:string):string{
  if(!/^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9.-]+$/.test(value)||value.length>254)throw new EmailDeliveryError('permanent');
  return value.slice(value.lastIndexOf('@')+1);
 }
-function approve(config:ResendDigestApproval,now:Date):{from:string;origin:string}{
+function approve(config:ResendDigestApproval,now:Date):{from:string;origin:string;recipients?:readonly string[]}{
  const fail=()=>{throw new Error('Live digest email approval is incomplete');};
- if(config.mode!=='resend'||config.publicEmailEnabled!==true||config.ownerApproval?.decision!=='live-email-approved'||!reference(config.ownerApproval.reference))return fail();
+ if(config.mode!=='resend'||config.ownerApproval?.decision!=='live-email-approved'||!reference(config.ownerApproval.reference))return fail();
+ let recipients:readonly string[]|undefined;
+ if(config.audience!==undefined){
+  const audience=config.audience;
+  if(config.publicEmailEnabled!==false||audience?.kind!=='owner-only'||!Array.isArray(audience.recipients)||audience.recipients.length!==1)return fail();
+  const recipient:unknown=audience.recipients[0];
+  if(typeof recipient!=='string'||recipient!==recipient.toLowerCase())return fail();
+  mailbox(recipient);recipients=Object.freeze([recipient]);
+ }else if(config.publicEmailEnabled!==true)return fail();
  const sender=config.sender,tracking=config.trackingReview;
  if(!sender||sender.status!=='verified'||!reference(sender.evidenceReference)||!tracking||!reference(tracking.reference)||tracking.authOpenTracking!==false||tracking.authClickTracking!==false||tracking.digestOpenTracking!==false||tracking.digestClickTracking!==false)return fail();
  const verified=domain(sender.domain);
@@ -44,7 +53,7 @@ function approve(config:ResendDigestApproval,now:Date):{from:string;origin:strin
  if(config.authenticationDomain!==undefined)domain(config.authenticationDomain);
  if(mailbox(sender.address)!==verified)return fail();
  const checked=Date.parse(sender.checkedAt);if(!Number.isFinite(checked)||checked>now.getTime())return fail();
- return {from:sender.address,origin:appOrigin(config.appUrl??'')};
+ return {from:sender.address,origin:appOrigin(config.appUrl??''),...(recipients?{recipients}:{})};
 }
 function validateMessage(message:EmailMessage,origin:string,key:string):void{
  mailbox(message.to);
@@ -66,16 +75,18 @@ export class ResendDigestGateway implements EmailGateway{
  private readonly sender:{from:string;origin:string};
  private readonly timeoutMs:number;
  private readonly replyTo?:string;
+ private readonly recipients?:readonly string[];
  constructor(config:ResendDigestApproval,private readonly client:ResendSendClient,now=new Date()){
-  this.sender=approve(config,now);
+  const approved=approve(config,now);this.sender=approved;this.recipients=approved.recipients;
   if(config.replyTo){mailbox(config.replyTo);this.replyTo=config.replyTo;}
   this.timeoutMs=config.requestTimeoutMs??10000;
   if(!Number.isSafeInteger(this.timeoutMs)||this.timeoutMs<100||this.timeoutMs>30000)throw new Error('Invalid bounded email request timeout');
   this.approval=Object.freeze({}) as ApprovedResendPolicy;
-  policies.set(this.approval,{origin:this.sender.origin,gateway:this});
+  policies.set(this.approval,{origin:this.sender.origin,gateway:this,...(this.recipients?{recipients:this.recipients}:{})});
  }
  async send(message:EmailMessage,idempotencyKey:string):Promise<{id:string}>{
   validateMessage(message,this.sender.origin,idempotencyKey);
+  if(this.recipients&&!this.recipients.includes(message.to.toLowerCase()))throw new EmailDeliveryError('permanent');
   let response:Awaited<ReturnType<ResendSendClient['emails']['send']>>;
   try{response=await this.client.emails.send({from:this.sender.from,to:[message.to],...(this.replyTo?{replyTo:this.replyTo}:{}),subject:message.subject,html:message.html,text:message.text,headers:{...message.headers}},{idempotencyKey,signal:AbortSignal.timeout(this.timeoutMs)});}
   catch{throw new EmailDeliveryError('ambiguous');}
@@ -96,13 +107,18 @@ export function createResendDigestGateway(config:ResendDigestApproval,apiKey:str
 }
 declare const approvedResendBrand:unique symbol;
 export interface ApprovedResendPolicy {readonly [approvedResendBrand]:true;}
-const policies=new WeakMap<object,{origin:string;gateway:EmailGateway}>();
+const policies=new WeakMap<object,{origin:string;gateway:EmailGateway;recipients?:readonly string[]}>();
 /** Process-local capability created only by the fully validated live adapter.
  * It is not serializable rollout evidence and must never be persisted in a job.
  */
 export function assertApprovedResendPolicy(approval:unknown,origin:string,gateway?:EmailGateway):asserts approval is ApprovedResendPolicy{
  const policy=approval&&typeof approval==='object'?policies.get(approval):undefined;
  if(!policy||policy.origin!==appOrigin(origin)||(gateway&&policy.gateway!==gateway))throw new Error('Approved live email transport is required');
+}
+/** Recipient scope is read only from the validated process-local capability. */
+export function approvedResendRecipients(approval:unknown,origin:string):readonly string[]|undefined{
+ assertApprovedResendPolicy(approval,origin);
+ return policies.get(approval)!.recipients;
 }
 export interface EmailTransport {mode:'mock'|'resend';publicEmailEnabled:boolean;gateway:EmailGateway;liveApproval?:ApprovedResendPolicy;}
 /** Configuration-only construction; never verifies DNS or sends an email. The
@@ -111,19 +127,22 @@ export interface EmailTransport {mode:'mock'|'resend';publicEmailEnabled:boolean
 export function createEmailTransport(env:Record<string,string|undefined>):EmailTransport{
  const mode=env.EMAIL_DELIVERY_MODE??'mock';
  if(mode==='mock'){assertMockDelivery({mode,publicEmailEnabled:env.PUBLIC_EMAIL_ENABLED==='true'});return {mode:'mock',publicEmailEnabled:false,gateway:new MockEmailGateway()};}
- if(mode!=='resend'||env.PUBLIC_EMAIL_ENABLED!=='true')throw new Error('Live email rollout is not enabled');
+ if(mode!=='resend')throw new Error('Live email rollout is not enabled');
+ const publicEmailEnabled=env.PUBLIC_EMAIL_ENABLED==='true';
+ const ownerOnly=env.PUBLIC_EMAIL_ENABLED==='false'&&env.OWNER_ACCEPTANCE_ONLY==='true'&&env.EMAIL_AUTH_ENABLED!=='true';
+ if(!publicEmailEnabled&&!ownerOnly)throw new Error('Live email rollout is not enabled');
  let config:ResendDigestApproval;
  try{const parsed:unknown=JSON.parse(env.EMAIL_ROLLOUT_APPROVAL_JSON??'');if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))throw new Error();config=parsed as ResendDigestApproval;}catch{throw new Error('Live email approval document is required');}
- if(config.mode&&config.mode!=='resend'||config.publicEmailEnabled===false||config.appUrl&&config.appUrl!==env.APP_URL)throw new Error('Live email approval does not match runtime configuration');
- const gateway=createResendDigestGateway({...config,mode:'resend',publicEmailEnabled:true,appUrl:env.APP_URL},env.RESEND_API_KEY??'');
- return {mode:'resend',publicEmailEnabled:true,gateway,liveApproval:gateway.approval};
+ if(config.mode&&config.mode!=='resend'||config.publicEmailEnabled!==undefined&&config.publicEmailEnabled!==publicEmailEnabled||config.appUrl&&config.appUrl!==env.APP_URL||publicEmailEnabled&&config.audience!==undefined||!publicEmailEnabled&&config.audience?.kind!=='owner-only')throw new Error('Live email approval does not match runtime configuration');
+ const gateway=createResendDigestGateway({...config,mode:'resend',publicEmailEnabled,appUrl:env.APP_URL},env.RESEND_API_KEY??'');
+ return {mode:'resend',publicEmailEnabled,gateway,liveApproval:gateway.approval};
 }
 /** Authentication messages have no unsubscribe, sponsor, pixel or tracked links.
  * They use the same verified, tracking-disabled sender policy as release digests. */
 export class ResendAuthenticationGateway{
  private readonly sender:{from:string;origin:string};
  get from(){return this.sender.from;}
- constructor(config:ResendDigestApproval,private readonly client:ResendSendClient){this.sender=approve(config,new Date());}
+ constructor(config:ResendDigestApproval,private readonly client:ResendSendClient){if(config.audience!==undefined||config.publicEmailEnabled!==true)throw new Error('Authentication email requires public sender approval');this.sender=approve(config,new Date());}
  async send(to:string,link:string):Promise<{id:string}>{
   mailbox(to);
   let url:URL;try{url=new URL(link);if(url.origin!==this.sender.origin||url.pathname!=='/api/auth/callback/resend-email'||url.username||url.password||url.hash||!url.searchParams.get('token'))throw new Error();}catch{throw new EmailDeliveryError('permanent');}

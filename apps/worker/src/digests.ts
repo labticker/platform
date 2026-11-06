@@ -4,7 +4,7 @@ import type {PgDatabase,PgQueryResultHKT} from 'drizzle-orm/pg-core';
 import * as s from '@labticker/database/schema';
 import {assertMockDelivery,composeDigest,nextDigestAt,signUnsubscribe} from '@labticker/notifications';
 import type {DigestRelease,EmailGateway,EmailMessage} from '@labticker/notifications';
-import {assertApprovedResendPolicy,ResendDigestGateway,type ApprovedResendPolicy} from '@labticker/notifications/resend';
+import {assertApprovedResendPolicy,approvedResendRecipients,ResendDigestGateway,type ApprovedResendPolicy} from '@labticker/notifications/resend';
 
 type Database=PgDatabase<PgQueryResultHKT,typeof s>;
 export interface DigestQueueConfig {
@@ -17,7 +17,7 @@ const DAY=86400000;
 const reservedStatuses=['pending','claimed','failed','sent'];
 function checkConfig(config:DigestQueueConfig){
  if(config.mode==='resend'){
-  if(config.publicEmailEnabled!==true)throw new Error('Public email rollout is not approved');
+  if(config.publicEmailEnabled!==true&&!approvedResendRecipients(config.liveApproval,config.origin))throw new Error('Email rollout is not approved');
   assertApprovedResendPolicy(config.liveApproval,config.origin);
  }else assertMockDelivery(config);
  if(config.leaseMs!==undefined&&(!Number.isSafeInteger(config.leaseMs)||config.leaseMs<1000||config.leaseMs>900000))throw new Error('Invalid lease duration');
@@ -29,10 +29,11 @@ function labels(value:unknown):string[]{return Array.isArray(value)?value.flatMa
 /** One due account per transaction. All account operations lock users before related rows. */
 export async function prepareDueDigest(db:Database,config:DigestQueueConfig,now=new Date()):Promise<PreparationResult>{
  const deliveryMode=checkConfig(config);
+ const recipients=deliveryMode==='resend'?approvedResendRecipients(config.liveApproval,config.origin):undefined;
  return db.transaction(async tx=>{
   const [candidate]=await tx.select({user:s.users,preference:s.preferences}).from(s.users)
    .innerJoin(s.preferences,eq(s.preferences.userId,s.users.id))
-   .where(and(eq(s.preferences.enabled,true),lte(s.preferences.nextDueAt,now),isNull(s.users.suppressedAt),isNull(s.users.deletedAt)))
+   .where(and(eq(s.preferences.enabled,true),lte(s.preferences.nextDueAt,now),isNull(s.users.suppressedAt),isNull(s.users.deletedAt),recipients?and(inArray(s.users.email,[...recipients]),eq(s.users.role,'admin')):undefined))
    .orderBy(asc(s.preferences.nextDueAt)).limit(1).for('update',{of:s.users,skipLocked:true});
   if(!candidate)return {status:'idle',items:0};
   const user=candidate.user;
@@ -70,9 +71,10 @@ export async function prepareDueDigest(db:Database,config:DigestQueueConfig,now=
 /** Persist a fenced lease before dispatch so crash recovery reuses the exact payload/key. */
 export async function claimDigest(db:Database,config:DigestQueueConfig,now=new Date()):Promise<DigestClaim|null>{
  const deliveryMode=checkConfig(config);
+ const recipients=deliveryMode==='resend'?approvedResendRecipients(config.liveApproval,config.origin):undefined;
  return db.transaction(async tx=>{
   const [candidate]=await tx.select({id:s.digests.id,userId:s.digests.userId}).from(s.users).innerJoin(s.digests,eq(s.digests.userId,s.users.id))
-   .where(and(eq(s.digests.deliveryMode,deliveryMode),or(and(eq(s.digests.status,'pending'),or(isNull(s.digests.nextAttemptAt),lte(s.digests.nextAttemptAt,now))),and(eq(s.digests.status,'claimed'),lte(s.digests.claimUntil,now)))))
+   .where(and(recipients?and(inArray(s.users.email,[...recipients]),eq(s.users.role,'admin')):undefined,eq(s.digests.deliveryMode,deliveryMode),or(and(eq(s.digests.status,'pending'),or(isNull(s.digests.nextAttemptAt),lte(s.digests.nextAttemptAt,now))),and(eq(s.digests.status,'claimed'),lte(s.digests.claimUntil,now)))))
    .orderBy(asc(s.digests.scheduledFor)).limit(1).for('update',{of:s.users,skipLocked:true});
   if(!candidate)return null;
   const [digest]=await tx.select().from(s.digests).where(eq(s.digests.id,candidate.id)).for('update',{skipLocked:true});
@@ -114,6 +116,8 @@ export async function deliverClaim(db:Database,claim:DigestClaim,gateway:EmailGa
   };
   const [preference]=await tx.select().from(s.preferences).where(eq(s.preferences.userId,user.id));
   const consent=await tx.select({id:s.emailConsents.id}).from(s.emailConsents).where(and(eq(s.emailConsents.userId,user.id),eq(s.emailConsents.consentType,'digest'),isNull(s.emailConsents.withdrawnAt)));
+  const recipients=deliveryMode==='resend'?approvedResendRecipients(config.liveApproval,config.origin):undefined;
+  if(recipients&&(!recipients.includes(user.email)||user.role!=='admin'))return skip('Owner email audience changed');
   if(!user.emailVerified||user.suppressedAt||user.deletedAt||!preference?.enabled||!consent.length)return skip('Account is no longer eligible');
   const payload=message(digest.payload);
   if(!payload||payload.to!==user.email)return skip('Stored message is no longer eligible');

@@ -9,7 +9,7 @@ on:
       rollout_stage:
         description: Private owner acceptance never opens public registration; public pilot requires analytics
         type: choice
-        options: [owner-acceptance, public-pilot]
+        options: [owner-acceptance, owner-email-pilot, public-pilot]
         default: owner-acceptance
       approval_reference:
         description: Audit reference; routine work uses standing owner authorization
@@ -156,6 +156,12 @@ jobs:
         run: pnpm exec tsx scripts/provision-runtime-roles.ts
       - name: Stage approved OAuth and initial operational secrets through stdin
         env:
+          SENDER_IDENTITY: ${{ vars.SENDER_IDENTITY }}
+          SENDER_CONTACT: ${{ vars.SENDER_CONTACT }}
+          ROLLOUT_STAGE: ${{ inputs.rollout_stage }}
+          ACTUAL_APP: ${{ inputs.app }}
+          LIVE_EMAIL_APPROVAL_REFERENCE: ${{ inputs.live_email_approval_reference }}
+          EMAIL_AUTH_ENABLED: ${{ inputs.email_auth_enabled }}
           PILOT_SECRETS_APPROVED: 'true'
           RUNTIME_ROLES_BOOTSTRAP: ${{ inputs.bootstrap_runtime_roles }}
           FLY_APP: ${{ inputs.app }}

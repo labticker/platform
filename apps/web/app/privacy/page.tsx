@@ -2,7 +2,7 @@ import AnalyticsControl from './control';
 import {SiteHeader,SiteFooter} from '../site-chrome';
 export const dynamic='force-dynamic';
 export default function Privacy(){
- const analytics=process.env.ANALYTICS_PROVIDER==='posthog',live=process.env.EMAIL_DELIVERY_MODE==='resend'&&process.env.PUBLIC_EMAIL_ENABLED==='true';
+ const analytics=process.env.ANALYTICS_PROVIDER==='posthog',live=process.env.EMAIL_DELIVERY_MODE==='resend'&&(process.env.PUBLIC_EMAIL_ENABLED==='true'||process.env.OWNER_ACCEPTANCE_ONLY==='true');
  const region=process.env.NEXT_PUBLIC_POSTHOG_HOST==='https://eu.i.posthog.com'?'European Union':'United States';
  return <main><SiteHeader/><section className="page-heading prose"><p className="eyebrow">YOUR DATA, EXPLAINED</p><h1>Privacy at LabTicker</h1><p>LabTicker is free and ad-free. We do not sell your email address or send your account details to audience analytics.</p>
  <h2>Your account</h2><p>We store your email address, verification time, session, monitors, digest preferences and consent history. GitHub sign-in also stores the stable GitHub account ID used to recognize you. GitHub access tokens, display names and avatars are not retained. Sessions expire after seven days; email sign-in links expire after ten minutes.</p>
