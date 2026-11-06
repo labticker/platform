@@ -1,13 +1,15 @@
 import {readFile,writeFile} from 'node:fs/promises';
 import {createEmailTransport} from '../packages/notifications/src/resend.js';
 import {createPrivateEmailTestTransport} from '../packages/notifications/src/email-testing.js';
+import {ownerEmailPolicy} from './owner-email-policy.js';
 async function main(){
  const env=process.env,app=env.ACTUAL_APP??'',project=env.POSTHOG_PROJECT??'',host=env.POSTHOG_HOST??'',start=env.MEASUREMENT_START??'';
- const stage=env.ROLLOUT_STAGE??'owner-acceptance',ownerOnly=stage==='owner-acceptance';
- if(!['owner-acceptance','public-pilot'].includes(stage)||!/^[a-z][a-z0-9-]{2,50}$/.test(app))throw new Error('Assigned rollout target required');
+ const stage=env.ROLLOUT_STAGE??'owner-acceptance',ownerOnly=stage!=='public-pilot',ownerEmail=stage==='owner-email-pilot';
+ if(!['owner-acceptance','owner-email-pilot','public-pilot'].includes(stage)||!/^[a-z][a-z0-9-]{2,50}$/.test(app))throw new Error('Assigned rollout target required');
  if(!ownerOnly&&(!/^\d{1,12}$/.test(project)||!['https://us.i.posthog.com','https://eu.i.posthog.com'].includes(host)||!env.POSTHOG_KEY||!env.POSTHOG_QUERY_KEY||!/^\d{4}-\d{2}-\d{2}$/.test(start)||new Date(start).toISOString().slice(0,10)!==start||env.ANALYTICS_ENABLED!=='true'))throw new Error('Approved project analytics configuration required');
  const mode=env.EMAIL_DELIVERY_MODE??'mock',live=mode==='resend';if(!['mock','resend'].includes(mode))throw new Error('Invalid email delivery mode');
- if(ownerOnly&&(live||env.EMAIL_AUTH_ENABLED==='true'))throw new Error('Owner acceptance cannot activate email');
+ if(ownerOnly&&((live&&!ownerEmail)||env.EMAIL_AUTH_ENABLED==='true'))throw new Error('Owner acceptance cannot activate email');
+ if(ownerEmail){ownerEmailPolicy(env);if(!env.RESEND_WEBHOOK_SECRET)throw new Error('Signed webhook required');}
  let text=(await readFile('fly.pilot.example.toml','utf8')).replaceAll('REPLACE_WITH_ASSIGNED_APP',app).replaceAll('REPLACE_WITH_OWNER_ACCESS',String(ownerOnly)).replaceAll('REPLACE_WITH_POSTHOG_PROJECT',project).replaceAll('REPLACE_WITH_POSTHOG_API_HOST',host==='https://us.i.posthog.com'?'https://us.posthog.com':'https://eu.posthog.com').replaceAll('REPLACE_WITH_MEASUREMENT_START',start);
  if(ownerOnly)text=text.replace(/^  POSTHOG_(?:PROJECT_ID|API_HOST|MEASUREMENT_START_DATE) = .*\r?\n/gm,'');
  if(env.EMAIL_TEST_ENABLED==='true'){
@@ -15,7 +17,10 @@ async function main(){
   createPrivateEmailTestTransport({...env,APP_URL:`https://${app}.fly.dev`,OWNER_ACCEPTANCE_ONLY:'true',PUBLIC_EMAIL_ENABLED:'false'});
   text=text.replace('  PUBLIC_EMAIL_ENABLED = "false"','  PUBLIC_EMAIL_ENABLED = "false"\n  EMAIL_TEST_ENABLED = "true"');
  }else{text=text.replace('  PUBLIC_EMAIL_ENABLED = "false"','  PUBLIC_EMAIL_ENABLED = "false"\n  EMAIL_TEST_ENABLED = "false"');}
- if(live){
+ if(ownerEmail){
+  text=text.replace('EMAIL_DELIVERY_MODE = "mock"','EMAIL_DELIVERY_MODE = "resend"').replace('WORKER_MODE = "mock-pilot"','WORKER_MODE = "digest-pilot"');
+  text=text.replace(/^  SENDER_(?:IDENTITY|CONTACT) = .*\r?\n/gm,'');
+ }else if(live){
   const config=JSON.parse(env.EMAIL_ROLLOUT_APPROVAL_JSON??'');
   if(!env.LIVE_EMAIL_APPROVAL_REFERENCE||config.ownerApproval?.reference!==env.LIVE_EMAIL_APPROVAL_REFERENCE)throw new Error('Live email owner decision does not match deployment');
   createEmailTransport({...env,APP_URL:`https://${app}.fly.dev`,PUBLIC_EMAIL_ENABLED:'true'});

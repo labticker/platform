@@ -11,6 +11,40 @@ import {prepareDueDigest,claimDigest,deliverClaim,sendOneDigest} from '../src/di
 import {ResendDigestGateway} from '@labticker/notifications/resend';
 const now=new Date('2026-03-09T09:00:00Z');
 const config={origin:'https://fixture.fly.dev',unsubscribeSecret:'fixture-only-signing-key-'.repeat(3),senderIdentity:'LabTicker fixture',senderContact:'Fictional fixture contact',leaseMs:1000};
+
+function ownerTransport(){
+ let calls=0;
+ const gateway=new ResendDigestGateway({mode:'resend',publicEmailEnabled:false,audience:{kind:'owner-only',recipients:['queue-fixture@example.invalid']},ownerApproval:{decision:'live-email-approved',reference:'owner-scheduled-email-approved/fixture'},sender:{address:'updates@example.org',domain:'example.org',status:'verified',evidenceReference:'fixture-domain',checkedAt:'2026-01-01'},trackingReview:{reference:'fixture-no-tracking',authOpenTracking:false,authClickTracking:false,digestOpenTracking:false,digestClickTracking:false},appUrl:config.origin},{emails:{async send(){calls++;return {data:{id:'owner-provider-fixture'},error:null};}}},now);
+ return {gateway,config:{...config,mode:'resend',publicEmailEnabled:false,liveApproval:gateway.approval},calls:()=>calls};
+}
+test('owner scheduled delivery excludes other due accounts without changing their schedules or receipts',async()=>{
+ const f=await fixture();try{
+  await f.db.update(s.users).set({role:'admin'}).where(eq(s.users.id,f.user.id));
+  const [other]=await f.db.insert(s.users).values({email:'other@example.invalid',emailVerified:now,role:'admin'}).returning();assert.ok(other);
+  const earlier=new Date(now.getTime()-1000);
+  await f.db.insert(s.preferences).values({userId:other.id,frequency:'daily',timezone:'UTC',enabled:true,nextDueAt:earlier});
+  await f.db.insert(s.digests).values({userId:other.id,deliveryMode:'resend',scheduledFor:earlier,windowFrom:earlier,windowTo:now,status:'pending',idempotencyKey:'digest/outsider',payload:{to:other.email}});
+  const transport=ownerTransport();
+  assert.equal((await prepareDueDigest(f.db,transport.config,now)).status,'queued');
+  assert.equal((await f.db.select().from(s.preferences).where(eq(s.preferences.userId,other.id)))[0]?.nextDueAt?.toISOString(),earlier.toISOString());
+  assert.equal(await sendOneDigest(f.db,transport.gateway,transport.config,now),'sent');assert.equal(transport.calls(),1);
+  assert.equal(await sendOneDigest(f.db,transport.gateway,transport.config,now),'idle');
+  const receipts=await f.db.select().from(s.deliveryReceipts);assert.equal(receipts.length,1);assert.equal(receipts[0]?.userId,f.user.id);
+  assert.equal((await f.db.select().from(s.digests).where(eq(s.digests.userId,other.id)))[0]?.status,'pending');
+ }finally{await f.client.close();}
+});
+test('owner scheduled delivery rechecks audience and admin role under the dispatch lock',async()=>{
+ for(const change of [{email:'changed@example.invalid'},{role:'user'}]){
+  const f=await fixture();try{
+   await f.db.update(s.users).set({role:'admin'}).where(eq(s.users.id,f.user.id));
+   const transport=ownerTransport();assert.equal((await prepareDueDigest(f.db,transport.config,now)).status,'queued');
+   const claim=await claimDigest(f.db,transport.config,now);assert.ok(claim);
+   await f.db.update(s.users).set(change).where(eq(s.users.id,f.user.id));
+   assert.equal(await deliverClaim(f.db,claim,transport.gateway,transport.config,now),'failed');assert.equal(transport.calls(),0);
+   assert.equal((await f.db.select().from(s.deliveryReceipts)).length,0);
+  }finally{await f.client.close();}
+ }
+});
 test('mock receipts cannot count as real delivery or block an explicitly approved mode transition',async()=>{
  const f=await fixture();try{
   await prepareDueDigest(f.db,config,now);assert.equal(await sendOneDigest(f.db,new MockEmailGateway(),config,now),'sent');
@@ -136,7 +170,7 @@ test('empty/backfill/future/pre-subscription digests are skipped and the window 
   const [preference]=await f.db.select().from(s.preferences);assert.equal(preference?.nextDueAt?.toISOString(),'2026-03-10T09:00:00.000Z');
   assert.equal((await f.db.select().from(s.digestItems)).length,0);
   assert.equal((await prepareDueDigest(f.db,config,now)).status,'idle');
-  await assert.rejects(()=>prepareDueDigest(f.db,{...config,mode:'resend'},now),/Public email/);
+  await assert.rejects(()=>prepareDueDigest(f.db,{...config,mode:'resend'},now),/Approved|rollout/);
  }finally{await f.client.close();}
 });
 test('ordinary unsent history older than 30 days remains eligible after an outage',async()=>{

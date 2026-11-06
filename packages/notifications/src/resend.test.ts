@@ -1,5 +1,5 @@
 import {describe,it,expect,vi} from 'vitest';
-import {ResendDigestGateway,createResendDigestGateway,createEmailTransport,assertApprovedResendPolicy,EmailDeliveryError,type ResendDigestApproval,type ResendSendClient} from './resend.js';
+import {ResendDigestGateway,ResendAuthenticationGateway,createResendDigestGateway,createEmailTransport,createAuthenticationEmailTransport,assertApprovedResendPolicy,approvedResendRecipients,EmailDeliveryError,type ResendDigestApproval,type ResendSendClient} from './resend.js';
 import {MockEmailGateway} from './core.js';
 import type {EmailMessage} from './core.js';
 const now=new Date('2026-10-31T00:00:00Z');
@@ -33,6 +33,40 @@ describe('dormant Resend digest gateway',()=>{
   const sdk=client(),gateway=new ResendDigestGateway(approval(),sdk,now),mail=message();
   expect(await gateway.send(mail,'digest/fixture-id')).toEqual({id:'provider-fixture'});
   expect(sdk.emails.send).toHaveBeenCalledExactlyOnceWith({from:'updates@updates.example.org',to:[mail.to],subject:mail.subject,html:mail.html,text:mail.text,headers:mail.headers},{idempotencyKey:'digest/fixture-id',signal:expect.any(AbortSignal)});
+ });
+ it('binds an immutable singleton owner audience and blocks other recipients before SDK calls',async()=>{
+  const recipients=['fixture@example.com'];
+  const sdk=client(),config:ResendDigestApproval={...approval(),publicEmailEnabled:false,audience:{kind:'owner-only',recipients}},gateway=new ResendDigestGateway(config,sdk,now);
+  recipients[0]='outsider@example.com';
+  expect(approvedResendRecipients(gateway.approval,'https://web.example.org')).toEqual(['fixture@example.com']);
+  expect(Object.isFrozen(approvedResendRecipients(gateway.approval,'https://web.example.org'))).toBe(true);
+  expect(()=>approvedResendRecipients({},'https://web.example.org')).toThrow('Approved');
+  expect(()=>approvedResendRecipients(gateway.approval,'https://other.example.org')).toThrow('Approved');
+  await expect(gateway.send({...message(),to:'outsider@example.com'},'digest/outsider')).rejects.toMatchObject({disposition:'permanent'});
+  expect(sdk.emails.send).not.toHaveBeenCalled();
+  await expect(gateway.send({...message(),to:'Fixture@example.com'},'digest/owner')).resolves.toEqual({id:'provider-fixture'});
+  expect(sdk.emails.send).toHaveBeenCalledTimes(1);
+  expect(approvedResendRecipients(new ResendDigestGateway(approval(),client(),now).approval,'https://web.example.org')).toBeUndefined();
+ });
+ it('rejects incomplete, noncanonical or widened owner audiences',()=>{
+  const base={...approval(),publicEmailEnabled:false};
+  for(const recipients of [[],['fixture@example.com','other@example.com'],['Fixture@example.com'],[' fixture@example.com'],['fixture@example.com\r\nBcc: other@example.com'],['not-a-mailbox']]){
+   expect(()=>new ResendDigestGateway({...base,audience:{kind:'owner-only',recipients}},client(),now)).toThrow();
+  }
+  expect(()=>new ResendDigestGateway({...base,audience:{kind:'public',recipients:['fixture@example.com']} as unknown as ResendDigestApproval['audience']},client(),now)).toThrow();
+  expect(()=>new ResendDigestGateway({...approval(),audience:{kind:'owner-only',recipients:['fixture@example.com']}},client(),now)).toThrow();
+  expect(()=>new ResendDigestGateway({...base,audience:{kind:'owner-only',recipients:['fixture@example.com']},ownerApproval:undefined},client(),now)).toThrow();
+ });
+ it('requires explicit owner flags and live approval while keeping public enrollment and auth closed',()=>{
+  const config:ResendDigestApproval={...approval(),publicEmailEnabled:false,audience:{kind:'owner-only',recipients:['fixture@example.com']}};
+  const env={EMAIL_DELIVERY_MODE:'resend',PUBLIC_EMAIL_ENABLED:'false',OWNER_ACCEPTANCE_ONLY:'true',EMAIL_AUTH_ENABLED:'false',APP_URL:'https://web.example.org',RESEND_API_KEY:'fixture-key',EMAIL_ROLLOUT_APPROVAL_JSON:JSON.stringify(config)};
+  const transport=createEmailTransport(env);
+  expect(transport.mode).toBe('resend');expect(transport.publicEmailEnabled).toBe(false);
+  expect(approvedResendRecipients(transport.liveApproval,env.APP_URL)).toEqual(['fixture@example.com']);
+  for(const patch of [{OWNER_ACCEPTANCE_ONLY:'false'},{OWNER_ACCEPTANCE_ONLY:undefined},{PUBLIC_EMAIL_ENABLED:undefined},{PUBLIC_EMAIL_ENABLED:'true'},{EMAIL_AUTH_ENABLED:'true'},{EMAIL_ROLLOUT_APPROVAL_JSON:undefined},{EMAIL_ROLLOUT_APPROVAL_JSON:JSON.stringify({...config,audience:undefined})},{APP_URL:'https://other.example.org'}])expect(()=>createEmailTransport({...env,...patch})).toThrow();
+  expect(()=>createEmailTransport({...env,EMAIL_ROLLOUT_APPROVAL_JSON:undefined,EMAIL_TEST_APPROVAL_JSON:JSON.stringify(config)})).toThrow();
+  expect(()=>createAuthenticationEmailTransport({...env,EMAIL_AUTH_ENABLED:'true'})).toThrow();
+  expect(()=>new ResendAuthenticationGateway(config,client())).toThrow('public');
  });
  it('rejects header/recipient injection, tracking markup and invalid unsubscribe before dispatch',async()=>{
   const sdk=client(),gateway=new ResendDigestGateway(approval(),sdk,now);
